@@ -1,0 +1,92 @@
+Trade off between max eigen of bipartite matrix and norm of inverse of bipartite matrix.
+========================================================
+```{r}
+# Nestedness optimization
+rewirelinks.richer <- function(B, HowManyToTry) {
+  library(bipartite)
+  B = sortweb(B)  # sort rows and cols descending
+  count1 <- 0
+  NumP <- dim(B)[1]
+  NumA <- dim(B)[2]
+  while (count1 < HowManyToTry){
+    count1 <- count1 + 1
+    ## pick one interaction between two random species
+    repeat {
+      row1 <- sample(1:NumP, 1)
+      col1 <- sample(1:NumA, 1)
+      if (B[row1, col1] != 0) break
+    }
+    ## random choose another species
+    if (runif(1) < 0.5) {  # choose another plant
+      row2 =  sample(1:row1, 1)  # choose random plant with more interactions
+      if (row2 < row1 && B[row2, col1] == 0 && sum(B[row1,]) > 1) {
+        B[row2, col1] = B[row1, col1]
+        B[row1, col1] = 0
+      }
+    }
+    else {  # choose another animal
+      col2 =  sample(1:col1, 1)
+      if (col2 < col1 && B[row1, col2] == 0 && sum(B[,col1]) > 1 ) {
+        B[row1, col2] = B[row1, col1]
+        B[row1, col1] = 0
+      }
+    }
+    sortweb(B)
+  }
+  B
+}
+
+```
+
+
+```{r}
+library(igraph)
+library(bipartite)
+n1 = 100  # number of plants
+n2 = 200  # number of animals
+edges = 650  # number of edges
+repeat {
+  g = bipartite.random.game(n1, n2, type = 'gnm', m = edges)
+  a = get.incidence(g)
+  # a = sortweb(a)
+  if (all(rowSums(a) != 0) && all(colSums(a) != 0)) break  
+}
+b = a
+# visweb(a)
+
+d = 2 * edges / (n1 + n2)  # the elements on the diagonal
+D =  50 * diag(rep(d, n1 + n2), ncol = n1 + n2)  # construct a diagonal matrix
+
+totalsteps = 100
+stepwise = 100
+a1 = as.one.mode(a)
+a2 = a1 %*% a1
+tr4 = sum(a2^2)
+a1 = D - a1
+maxeigen = max(eigen(a1)$values)
+maxeigen.inv = max(eigen(solve(a1))$values)
+norm.inv = sum(solve(a1))
+df.nestedness = data.frame(step = 0, nest.cmnb = nest.cmnb(a)$CMNB, nest.cmnb2 = nest.cmnb2(a)$CMNB, nest.nodf = nest.nodf(a)$NODF, nest.nodf2 = nest.nodf2(a)$NODF, maxeigen = maxeigen, norm.inv = norm.inv, tr4 = tr4, maxeigen.inv = maxeigen.inv)
+for (i in 1:totalsteps) {
+  a = rewirelinks.richer(a, stepwise)
+  a1 = as.one.mode(a)
+  a2 = a1 %*% a1
+  tr4 = sum(a2^2)
+  a1 = D - a1
+  maxeigen = max(eigen(a1)$values)
+  maxeigen.inv = max(eigen(solve(a1))$values)
+  norm.inv = sum(solve(a1))
+  df.nestedness = rbind(df.nestedness, data.frame(step = i, nest.cmnb = nest.cmnb(a)$CMNB, nest.cmnb2 = nest.cmnb2(a)$CMNB, nest.nodf = nest.nodf(a)$NODF, nest.nodf2 = nest.nodf2(a)$NODF, maxeigen = maxeigen, norm.inv = norm.inv, tr4 = tr4, maxeigen.inv = maxeigen.inv))
+  print(i)
+}
+
+
+```
+
+
+You can also embed plots, for example:
+
+```{r fig.width=7, fig.height=6}
+plot(cars)
+```
+
