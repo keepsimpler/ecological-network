@@ -1,40 +1,6 @@
 Trade off between max eigen of bipartite matrix and norm of inverse of bipartite matrix.
 ========================================================
 ```{r}
-# Nestedness optimization
-rewirelinks.richer <- function(B, HowManyToTry) {
-  library(bipartite)
-  B = sortweb(B)  # sort rows and cols descending
-  count1 <- 0
-  NumP <- dim(B)[1]
-  NumA <- dim(B)[2]
-  while (count1 < HowManyToTry){
-    count1 <- count1 + 1
-    ## pick one interaction between two random species
-    repeat {
-      row1 <- sample(1:NumP, 1)
-      col1 <- sample(1:NumA, 1)
-      if (B[row1, col1] != 0) break
-    }
-    ## random choose another species
-    if (runif(1) < 0.5) {  # choose another plant
-      row2 =  sample(1:row1, 1)  # choose random plant with more interactions
-      if (row2 < row1 && B[row2, col1] == 0 && sum(B[row1,]) > 1) {
-        B[row2, col1] = B[row1, col1]
-        B[row1, col1] = 0
-      }
-    }
-    else {  # choose another animal
-      col2 =  sample(1:col1, 1)
-      if (col2 < col1 && B[row1, col2] == 0 && sum(B[,col1]) > 1 ) {
-        B[row1, col2] = B[row1, col1]
-        B[row1, col1] = 0
-      }
-    }
-    sortweb(B)
-  }
-  B
-}
 
 ```
 

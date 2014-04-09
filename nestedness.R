@@ -2,40 +2,94 @@ library(vegan)
 library(bipartite)
 library(igraph)
 
-## get the adjacency matrix according to the interaction frequency matrix
-GetAdjacencyMatrix <- function(A){
-  NumP <- dim(A)[1]
-  NumA <- dim(A)[2]
-  S <- NumP + NumA
-  Adj <- matrix(0, S, S)
-  Adj[1:NumP, (NumP + 1):S] <- A
-  Adj <- Adj + t(Adj)
-  return(Adj)
+###############################################################################
+#' @title Nestedness optimization algrithm by rewiring links to nodes with more links. (richer get richer)
+#'
+#' @param B incidence matrix of bipartite network, rows and cols represent two groups of nodes/species
+#' @param HowManyToTry the times to try for rewiring links
+#' @return the incidence matrix whose nestedness has been optimized by rewiring links.
+#' @details .  
+#' @import bipartite
+#' @export
+rewirelinks.richer <- function(B, HowManyToTry) {
+  library(bipartite)
+  B = sortweb(B)  # sort rows and cols descending, ensure the chosen species later has more interactions
+  count1 <- 0
+  NumP <- dim(B)[1]
+  NumA <- dim(B)[2]
+  while (count1 < HowManyToTry){
+    count1 <- count1 + 1
+    ## pick one interaction between two random species
+    repeat {
+      row1 <- sample(1:NumP, 1)
+      col1 <- sample(1:NumA, 1)
+      if (B[row1, col1] != 0) break
+    }
+    ## random choose another species
+    if (runif(1) < 0.5) {  # choose another plant
+      row2 =  sample(1:row1, 1)  # choose random plant with more interactions
+      # Three exceptions: 1. the new chosen species [row2] is same with the old species [row1]
+      # 2. the new chosen species [row2] already has interaction with [col1]
+      # 3. the old species [row1] has only one interaction.
+      if (row2 < row1 && B[row2, col1] == 0 && sum(B[row1,]) > 1) {
+        B[row2, col1] = B[row1, col1]
+        B[row1, col1] = 0
+      }
+    }
+    else {  # choose another animal
+      col2 =  sample(1:col1, 1)
+      if (col2 < col1 && B[row1, col2] == 0 && sum(B[,col1]) > 1 ) {
+        B[row1, col2] = B[row1, col1]
+        B[row1, col1] = 0
+      }
+    }
+    sortweb(B)
+  }
+  B
 }
 
-estimate.dominant.eigenvalue <- function(A) {
-  A = GetAdjacencyMatrix(A)
-  B = A
-  B[B!=0] = 1
-  eigenvalues = eigen(B)$values
-  max.eigenvalues = eigenvalues[1]
-  BM2 =  sum(diag(B %*% B))
-  #BM3 =  sum(diag(B %*% B %*% B)) / s
-  BM4 =  sum(diag(B %*% B %*% B %*% B))
-  s = dim(B)[1]
-  lambda1 = sqrt( ( (s-2)*BM4 + 8 * BM2^2 / (s+2) - 2*BM2^2 ) / (2*(s+2))) + 2*BM2 / (s+2)
-  lambda1 = sqrt(lambda1)
-  
-  r = (BM2 - 2*lambda1^2) / (s - 2)
-  
-  strengths2 = rowSums(B^2)
-  q2 = sum(strengths2^2)
-  
-  chung = sum(rowSums(B)**2) / sum(rowSums(B))
-  
-  c(max.eigenvalues = max.eigenvalues, lambda1 = lambda1, chung = chung)
+###############################################################################
+#' @title Swap links of bipartite network, that will keep the node degree distribution.
+#'
+#' @param B incidence matrix of bipartite network, rows and cols represent two groups of nodes/species
+#' @param HowManyToTry the times to try for swapping links
+#' @return the incidence matrix whose links being randomly swapped.
+#' @details .  
+swaplinks <- function(B, HowManyToTry) {
+  count1 <- 0
+  NumP <- dim(B)[1]
+  NumA <- dim(B)[2]
+  while (count1 < HowManyToTry){
+    count1 <- count1 + 1
+    ## pick two rows and two columns
+    row1 <- sample(1:NumP, 1)
+    row2 <- sample(1:NumP, 1)
+    col1 <- sample(1:NumA, 1)
+    col2 <- sample(1:NumA, 1)
+    ## check swappable
+    if (B[row1, col1] == 0.0 && B[row1, col2] > 0.0 && B[row2, col1] > 0.0 && B[row2, col2] == 0.0){
+      ## swap
+      B[row1, col1] <- B[row1, col2]
+      B[row1, col2] <- 0.0
+      B[row2, col2] <- B[row2, col1]
+      B[row2, col1] <- 0.0
+    }
+    else{
+      if (B[row1, col1] > 0.0 && B[row1, col2] == 0.0 && B[row2, col1] == 0.0 && B[row2, col2] > 0.0){
+        ## swap
+        B[row1, col2] <- B[row1, col1]
+        B[row1, col1] <- 0.0
+        B[row2, col1] <- B[row2, col2]
+        B[row2, col2] <- 0.0
+      }
+    }
+  }
+  return(B)
 }
 
+
+# order incidence matrix of bipartite network by ascending or deascending of rows and cols totals.
+# Descripted by bipartite::sortweb
 order.by.rowsums.and.colsums <- function(comm, decreasing = FALSE) {
   rfill <- rowSums(comm)
   cfill <- colSums(comm)
