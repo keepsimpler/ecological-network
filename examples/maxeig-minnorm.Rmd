@@ -1,22 +1,45 @@
 Trade off between max eigen of bipartite matrix and norm of inverse of bipartite matrix.
 ========================================================
-```{r}
 
-```
-
-
+### Check the relation between nestedness and fraction of feasible steady states
 ```{r}
 library(igraph)
 library(bipartite)
-n1 = 100  # number of plants
-n2 = 200  # number of animals
-edges = 650  # number of edges
-repeat {
-  g = bipartite.random.game(n1, n2, type = 'gnm', m = edges)
-  a = get.incidence(g)
-  # a = sortweb(a)
-  if (all(rowSums(a) != 0) && all(colSums(a) != 0)) break  
+source('nestedness.R')
+source('DE.R')
+n1 = 25  # number of plants
+n2 = 25  # number of animals
+connectance = 0.2  # connectance of bipartite network
+edges = n1 * n2 * connectance  # number of edges
+repeat {  # generate a ER bipartite network that is connected
+  G = bipartite.random.game(n1, n2, type = 'gnm', m = edges)
+  if (igraph::is.connected(G)) break
 }
+A = get.incidence(G)  # get its incidence matrix
+B = A
+
+totalsteps = 5
+stepwise = 20
+feasible.nestedness = data.frame(step = numeric(0), nest.cmnb = numeric(0), nest.cmnb2 = numeric(0), nest.nodf = numeric(0), nest.nodf2 = numeric(0), feasible.frac = numeric(0), feasible.lev.mean = numeric(0), feasible.lev.sd = numeric(0))
+for (i in 1:totalsteps) {  
+  # for each network with optimized nestedness, check fraction of their feasible steady states
+  lv2.survived = data.frame(lv2.check(A, extinct.threshold = 10^-8))
+  for (j in 1:499) {  
+    lv2.survived = rbind(lv2.survived, lv2.check(A, extinct.threshold = 10^-8))
+  }
+  feasible.frac = sum(lv2.survived$extinct == 0) / 500  # fraction of feasible solution
+  feasible.lev.mean = mean(subset(lv2.survived, select = lev, extinct == 0)$lev)  # LEV of feasible states
+  feasible.lev.sd = sd(subset(lv2.survived, select = lev, extinct == 0)$lev)
+  tmp = data.frame(step = i, nest.cmnb = nest.cmnb(A)$CMNB, nest.cmnb2 = nest.cmnb2(A)$CMNB, nest.nodf = nest.nodf(A)$NODF, nest.nodf2 = nest.nodf2(A)$NODF, feasible.frac = feasible.frac, feasible.lev.mean = feasible.lev.mean, feasible.lev.sd = feasible.lev.sd)
+  feasible.nestedness = rbind(feasible.nestedness, tmp)
+  
+  A = rewirelinks.richer(A, stepwise)  # Optimize nestedness by rewiring links between species
+  print(i)
+}
+
+```
+
+```{r}
 b = a
 # visweb(a)
 
@@ -32,7 +55,7 @@ a1 = D - a1
 maxeigen = max(eigen(a1)$values)
 maxeigen.inv = max(eigen(solve(a1))$values)
 norm.inv = sum(solve(a1))
-df.nestedness = data.frame(step = 0, nest.cmnb = nest.cmnb(a)$CMNB, nest.cmnb2 = nest.cmnb2(a)$CMNB, nest.nodf = nest.nodf(a)$NODF, nest.nodf2 = nest.nodf2(a)$NODF, maxeigen = maxeigen, norm.inv = norm.inv, tr4 = tr4, maxeigen.inv = maxeigen.inv)
+df.nestedness = data.frame(step = 0, nest.cmnb = nest.cmnb(a)$CMNB, nest.cmnb2 = nest.cmnb2(a)$CMNB, nest.nodf = nest.nodf(a)$NODF, nest.nodf2 = nest.nodf2(a)$NODF, maxeigen = maxeigen, norm.inv = norm.inv, tr4 = tr4, maxeigen.inv = maxeigen.inv, lv2.check(a))
 for (i in 1:totalsteps) {
   a = rewirelinks.richer(a, stepwise)
   a1 = as.one.mode(a)
@@ -42,7 +65,7 @@ for (i in 1:totalsteps) {
   maxeigen = max(eigen(a1)$values)
   maxeigen.inv = max(eigen(solve(a1))$values)
   norm.inv = sum(solve(a1))
-  df.nestedness = rbind(df.nestedness, data.frame(step = i, nest.cmnb = nest.cmnb(a)$CMNB, nest.cmnb2 = nest.cmnb2(a)$CMNB, nest.nodf = nest.nodf(a)$NODF, nest.nodf2 = nest.nodf2(a)$NODF, maxeigen = maxeigen, norm.inv = norm.inv, tr4 = tr4, maxeigen.inv = maxeigen.inv))
+  df.nestedness = rbind(df.nestedness, data.frame(step = i, nest.cmnb = nest.cmnb(a)$CMNB, nest.cmnb2 = nest.cmnb2(a)$CMNB, nest.nodf = nest.nodf(a)$NODF, nest.nodf2 = nest.nodf2(a)$NODF, maxeigen = maxeigen, norm.inv = norm.inv, tr4 = tr4, maxeigen.inv = maxeigen.inv, lv2.check(a)))
   print(i)
 }
 
