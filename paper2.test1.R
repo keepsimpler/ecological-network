@@ -183,7 +183,7 @@ for (i in 1:30) {
 p <- c(N = 1, as = 0.01, af = 0.01, b = 0.02, qs = 0.075,
        qf=0.005,hs=0,hf=0.2,ls=0.05,lf=0.05,rs=0.5,
        rf=0.5,W=0)
-t <- 1:200
+t <- 1:3000
 Initial <- c(F = 10, S = 10)
 S.out1 = ode(Initial, t, scheffer, p)
 matplot(t, S.out1[, -1], type='l')
@@ -202,7 +202,7 @@ S.s <- t(sapply(N.s, function(x) {
 matplot(N.s, S.s, type = "l")
 legend("right", c("F", "S"), lty = 1:2, bty = "n")
 
-Initial.Eutrophic <- c(F = 600, S = 10)
+Initial.Eutrophic <- c(F = 300, S = 10)
 S.s.E <- t(sapply(N.s, function(x) {
   p["N"] <- x
   ode(Initial.Eutrophic, c(1, 1000), scheffer, p)[2, 2:3]
@@ -373,8 +373,15 @@ mod <- function (t = 0, y, parms = NULL) {
   dy4 <- y[4] * (9 * y[3] + 10)
   return(as.list(c(dy1, dy2, dy3, dy4)))
 }
-jacobian.full(y = c(1, 2, 3, 4), func = mod)
-
+jacobian.full(y = c(1, 1, 1, 0), func = mod)
+mod2 <- function (y) {
+  dy1 <- y[1] * (-10 + 2 * y[2])
+  dy2 <- y[2] * (3 * y[1] - 40 + 5 * y[3])
+  dy3 <- y[3] * (6 * y[2] - 70 + 8 * y[4])
+  dy4 <- y[4] * (9 * y[3] - 10)
+  c(dy1, dy2, dy3, dy4)
+}
+multiroot(f = mod2, start = c(1, 1, 1, 1))
 mod.matrix <- function(t = 0, y, parms = parms) {
   r = parms[[1]]
   M = parms[[2]]

@@ -98,7 +98,7 @@ lv2.check <- function(dataset, extinct.threshold = 10^-8) {
   
   survived = sum(Nstar > 0)  # Survived species at equillibrim state
   extinct = sum(Nstar == 0)  # Extinct species at equillibrim state
-  list(survived = survived, extinct = extinct, lev = lev)
+  list(survived = survived, extinct = extinct, lev = lev, parms = parms, Nstar = Nstar)
 }
 
 lv1.check <- function(dataset,  # the network

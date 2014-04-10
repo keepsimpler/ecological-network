@@ -1,5 +1,17 @@
-
-
+for (i in 1:100) {
+  parms[[2]] = alphaA - i * stepwise
+  lvout <- ode(y = Nstar, t, func = lv2, parms = parms, atol = 10^-14, rtol = 10^-12)  # 
+  Nstar = lvout[nrow(lvout), 2:ncol(lvout)]  # the species abundance at steady state
+  Nstar[Nstar < 10^-8] = 0  # species with biomass less than the threshold is considered to be extinct
+  
+  comm = jacobian.full(y = Nstar, func = lv2, parms = parms)  # Jacobian matrix in equilibrium
+  lev = max(Re(eigen(comm)$values))
+  
+  survived = sum(Nstar > 0)  # Survived species at equillibrim state
+  extinct = sum(Nstar == 0)  # Extinct species at equillibrim state
+  Nstars[,i+1] = Nstar
+  print(lev)
+}
 
 ##### evaluate 'Disentangling nestedness from models of ecological complex'
 
