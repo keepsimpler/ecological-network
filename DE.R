@@ -45,7 +45,7 @@ lv2 <- function(t, N, parms) {  # Times, State variables, parameters
   numA = length(alphaA)
   NP = N[1:numP]
   NAA = N[(numP + 1) : (numP + numA)]
-  dNP = alphaP - betaP %*% NP + gammaP %*% NAA / (1 + hP * gammaP %*% NAA)
+  dNP = alphaP - betaP %*% NP + gammaP %*% NAA / (1 + hP * gammaP %*% NAA) 
   dNA = alphaA - betaA %*% NAA + gammaA %*% NP / (1 + hA * gammaA %*% NP)
   dN = N * c(dNP, dNA)
   list(c(dN))
@@ -93,7 +93,7 @@ lv2.check <- function(dataset, extinct.threshold = 10^-8) {
   Nstar = lvout[nrow(lvout), 2:ncol(lvout)]  # the species abundance at steady state
   Nstar[Nstar < extinct.threshold] = 0  # species with biomass less than the threshold is considered to be extinct
   
-  comm = jacobian.full(y = Nstar, func = lv2, parms = parms)  # Jacobian matrix in equilibrium
+  comm = jacobian.full(y = lvout[nrow(lvout), 2:ncol(lvout)], func = lv2, parms = parms)  # Jacobian matrix in equilibrium
   lev = max(Re(eigen(comm)$values))
   
   survived = sum(Nstar > 0)  # Survived species at equillibrim state

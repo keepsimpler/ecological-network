@@ -1,4 +1,67 @@
-for (i in 1:100) {
+### Check the hysteresis, two alternative stable states, multiple basins of attractors
+
+df.hysteresis = data.frame(nest.nodf = numeric(0), Nstars = numeric(0), levs = numeric(0))
+
+for (nest in seq(0.1, 0.7, by = 0.05)) {
+  ## Generate bipartite network with definate nestedness
+  #nest = 0.15
+  repeat {
+    A = rewirelinks.richer(A, 1)
+    if (nest.nodf2(A)$NODF > nest) break
+  }
+  print(nest.nodf2(A)$NODF)
+  ## Find a feasible steady state, get its parms
+  repeat {
+    res = lv2.check(A)
+    if (res$extinct == 0) break
+  }
+  
+  parms = res$parms
+  Nstar = res$Nstar
+  lev = res$lev
+  
+  ## decrease the intrinsic growth rate of pollinators
+  steps = 400
+  Nstars = sapply(1:(steps + 1), function(i) rep(0, n1 + n2))
+  Nstars[,1] = Nstar
+  levs = rep(0, steps + 1)
+  levs[1] = lev
+  stepwise = 0.01
+  alphaA = parms[[2]]
+  t = seq(1, 500)  # times
+  for (i in 1:steps) {
+    parms[[2]] = alphaA - i * stepwise
+    lvout <- ode(y = Nstar, t, func = lv2, parms = parms, atol = 10^-14, rtol = 10^-12)  # 
+    Nstar = lvout[nrow(lvout), 2:ncol(lvout)]  # the species abundance at steady state
+    # Nstar[Nstar < 10^-8] = 0  # species with biomass less than the threshold is considered to be extinct
+    
+    comm = jacobian.full(y = Nstar, func = lv2, parms = parms)  # Jacobian matrix in equilibrium
+    lev = max(Re(eigen(comm)$values))
+    
+    Nstars[, i+1] = Nstar
+    levs[i+1] = lev
+    print(lev)
+  }
+  tmp = data.frame(nest.nodf = nest.nodf2(A)$NODF, Nstars = t(Nstars), levs =levs)
+  df.hysteresis = rbind(df.hysteresis, tmp)
+}
+
+tmp = t(Nstars)
+t = seq(1, steps + 1)
+matplot(t, tmp[, 1:10], type = 'l')  # plants
+matplot(t, tmp[, 11:35], type = 'l')  # animals
+lines(t, levs - min(levs), type = 'l')
+
+
+
+## decrease the intrinsic growth rate of pollinators
+steps = 400
+Nstars = sapply(1:(steps * 50), function(i) rep(0, n1 + n2))
+levs = rep(0, steps)
+stepwise = 0.01
+alphaA = parms[[2]]
+t = seq(1, 50)  # times
+for (i in 1:steps) {
   parms[[2]] = alphaA - i * stepwise
   lvout <- ode(y = Nstar, t, func = lv2, parms = parms, atol = 10^-14, rtol = 10^-12)  # 
   Nstar = lvout[nrow(lvout), 2:ncol(lvout)]  # the species abundance at steady state
@@ -7,11 +70,14 @@ for (i in 1:100) {
   comm = jacobian.full(y = Nstar, func = lv2, parms = parms)  # Jacobian matrix in equilibrium
   lev = max(Re(eigen(comm)$values))
   
-  survived = sum(Nstar > 0)  # Survived species at equillibrim state
-  extinct = sum(Nstar == 0)  # Extinct species at equillibrim state
-  Nstars[,i+1] = Nstar
+  Nstars[, ((i-1)*50+1):(i*50)] = lvout[, 2:ncol(lvout)]
+  levs[i+1] = lev
   print(lev)
 }
+tmp = t(Nstars)
+t = seq(1, steps * 50)
+matplot(t, tmp[, 1:25], type = 'l')  # plants
+matplot(t, tmp[, 26:50], type = 'l')  # animals
 
 ##### evaluate 'Disentangling nestedness from models of ecological complex'
 

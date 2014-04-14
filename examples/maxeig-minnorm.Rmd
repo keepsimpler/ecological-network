@@ -1,44 +1,6 @@
 Trade off between max eigen of bipartite matrix and norm of inverse of bipartite matrix.
 ========================================================
 
-### Check the hysteresis, two alternative stable states, multiple basins of attractors
-```{r}
-## Generate bipartite network with definate nestedness
-nest = 0.6
-repeat {
-  A = rewirelinks.richer(A, 1)
-  if (nest.nodf2(A)$NODF > nest) break
-}
-
-## Find a feasible steady state, get its parms
-repeat {
-  res = lv2.check(A)
-  if (res$extinct == 0) break
-}
-parms = res$parms
-Nstar = res$Nstar
-## decrease the intrinsic growth rate of pollinators
-Nstars = sapply(1:101, function(i) rep(0, n1 + n2))
-Nstars[,1] = Nstar
-stepwise = 0.01
-alphaA = parms[[2]]
-t = seq(1, 500)  # times
-for (i in 1:100) {
-  parms[[2]] = alphaA - i * stepwise
-  lvout <- ode(y = Nstar, t, func = lv2, parms = parms, atol = 10^-14, rtol = 10^-12)  # 
-  Nstar = lvout[nrow(lvout), 2:ncol(lvout)]  # the species abundance at steady state
-  Nstar[Nstar < 10^-8] = 0  # species with biomass less than the threshold is considered to be extinct
-  
-  comm = jacobian.full(y = Nstar, func = lv2, parms = parms)  # Jacobian matrix in equilibrium
-  lev = max(Re(eigen(comm)$values))
-  
-  survived = sum(Nstar > 0)  # Survived species at equillibrim state
-  extinct = sum(Nstar == 0)  # Extinct species at equillibrim state
-  Nstars[,i+1] = Nstar
-  print(lev)
-}
-```
-
 
 ### Check the relation between nestedness and fraction of feasible steady states
 ```{r}
@@ -48,7 +10,7 @@ source('nestedness.R')
 source('DE.R')
 n1 = 25  # number of plants
 n2 = 25  # number of animals
-connectance = 0.2  # connectance of bipartite network
+connectance = 0.175  # connectance of bipartite network
 edges = n1 * n2 * connectance  # number of edges
 repeat {  # generate a ER bipartite network that is connected
   G = bipartite.random.game(n1, n2, type = 'gnm', m = edges)
