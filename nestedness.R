@@ -3,6 +3,36 @@ library(bipartite)
 library(igraph)
 
 ###############################################################################
+#' @title Generate a connected graph using package [igraph]
+#'
+#' @param s size of network. 
+#' if graph type is bipartite, s[1], s[2] represent size of two groups; else s is size of network
+#' @param k average degree for the network.
+#' 1 < k < s for unipartite network, 1 < k < s[1]*s[2]/(s[1]+s[2]) for bipartite network.
+#' @param gtype Graph type generated: 'bipartite'
+#' @param ... the parms conform to the implementation functions of [igraph]
+#' @return the connected graph
+#' @details .  
+#' @import igraph
+graph.connected <- function(s, k, gtype, ...) {
+  library(igraph)
+  if (gtype == 'bipartite' && is.na(s[2])) {  # the bipartite graph need size of two groups of nodes
+    warning('sizes of TWO node groups should be designated. we have assumed second size to be the first size.')
+    s[2] = s[1]  # if missed second size, we assume it equal to the first size.
+  }
+  repeat {  # generate a connected graph
+    if (gtype == 'bipartite') {
+      G = bipartite.random.game(s[1], s[2], type = 'gnm', m = k * (s[1] + s[2]))
+    }
+    else {
+      G = erdos.renyi.game(s, m = k * s, type = 'gnm')
+    }
+    if (igraph::is.connected(G)) break  # until a connected graph is generated
+  }
+  G
+}
+
+###############################################################################
 #' @title Nestedness optimization algrithm by rewiring links to nodes with more links. (richer get richer)
 #'
 #' @param B incidence matrix of bipartite network, rows and cols represent two groups of nodes/species
@@ -10,7 +40,6 @@ library(igraph)
 #' @return the incidence matrix whose nestedness has been optimized by rewiring links.
 #' @details .  
 #' @import bipartite
-#' @export
 rewirelinks.richer <- function(B, HowManyToTry) {
   library(bipartite)
   B = sortweb(B)  # sort rows and cols descending, ensure the chosen species later has more interactions
@@ -27,7 +56,7 @@ rewirelinks.richer <- function(B, HowManyToTry) {
     }
     ## random choose another species
     if (runif(1) < 0.5) {  # choose another plant
-      row2 =  sample(1:row1, 1)  # choose random plant with more interactions
+      row2 =  sample(1:row1, 1)  # choose random plant with more interactions which is entured by [sortweb]
       # Three exceptions: 1. the new chosen species [row2] is same with the old species [row1]
       # 2. the new chosen species [row2] already has interaction with [col1]
       # 3. the old species [row1] has only one interaction.
@@ -43,7 +72,7 @@ rewirelinks.richer <- function(B, HowManyToTry) {
         B[row1, col1] = 0
       }
     }
-    sortweb(B)
+    sortweb(B)  # sort rows and cols descending for the next link rewiring.
   }
   B
 }
@@ -89,7 +118,7 @@ swaplinks <- function(B, HowManyToTry) {
 
 
 # order incidence matrix of bipartite network by ascending or deascending of rows and cols totals.
-# Descripted by bipartite::sortweb
+# Replaced by bipartite::sortweb
 order.by.rowsums.and.colsums <- function(comm, decreasing = FALSE) {
   rfill <- rowSums(comm)
   cfill <- colSums(comm)

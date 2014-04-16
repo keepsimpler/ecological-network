@@ -1,3 +1,28 @@
+source('nestedness.R')
+source('DE.R')
+
+n1 = 25  # number of plants
+n2 = 25  # number of animal pollinators
+k = 4  # average degree of species
+G = graph.connected(s = c(n1, n2), k = k, gtype = 'bipartite')
+A = get.incidence(G)  # get the incidence matrix of bipartite network [G]
+
+
+#### Check the feasible equilibrium of LV1 model
+repeat {
+  res = lv1.check(A)
+  if (res$extinct == 0) break  # until the situation that all species survived at steady state
+}
+M = res$parms[[2]]  # interaction matrix of feasible solution
+r = res$parms[[1]]  # intrinsic matrix of feasible solution
+J = res$comm  # Jacobian matrix at equilibrium of feasible solution
+Nstar = res$Nstar  # species abundance at equilibrium
+sum(M %*% Nstar + r > 1e-8)  # the relation between species abundance and (M, r) 
+sum(Nstar * M - J > 1e-7)  # relation between Jacobian matrix and (M, Nstar)
+sum(as.numeric(-solve(M) %*% r) - Nstar > 1e-10)
+
+
+
 ### Check the hysteresis, two alternative stable states, multiple basins of attractors
 
 df.hysteresis = data.frame(nest.nodf = numeric(0), Nstars = numeric(0), levs = numeric(0))
