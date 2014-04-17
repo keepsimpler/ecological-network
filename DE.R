@@ -111,6 +111,7 @@ lv2.check <- function(dataset, extinct.threshold = 10^-8) {
 #' @return a list with:
 #' @return survived  the number of survived species when in steady state
 #' @return extinct  the number of extinct species when in steady state
+#' @return comm the Jacobian matrix in steady state (two options of Nstar?)
 #' @return lev  the Largest EiganValue of Jacobian matrix in steady state
 #' @details .
 lv1.check <- function(dataset, extinct.threshold = 10^-8) {
@@ -153,44 +154,43 @@ lv1.check <- function(dataset, extinct.threshold = 10^-8) {
   list(survived = survived, extinct = extinct, lev = lev, parms = parms, Nstar = Nstar, comm = comm)
 }
 
-lv1.check.softmean <- function(dataset, extinct.threshold = 10^-8) {
+#### the soft mean field approximation of LV1 model from Bastolla et al. Nature 458, 2009
+lv1.check.softmean <- function(dataset, alpha0, beta0, gamma0, extinct.threshold = 10^-8) {
   dataset[dataset > 0] = 1  # insure input is a binary network
   numP = dim(dataset)[1]  # number of Plants
   numA = dim(dataset)[2]  # number of Animals
+  s = numP + numA  # number of all species
+  # the mean value of interspecific interaction strength,
+  # the intraspecific interaction strength has been normalized to 1 by \beta_{ij} / \sqrt(\beta_{ii}\beta_{jj})
+  #beta0 = 0.2
+  betaP = matrix(beta0, ncol = numP, nrow = numP)
+  diag(betaP) = 1
+  betaA = matrix(beta0, ncol = numA, nrow = numA)
+  diag(betaA) = 1
   
-  ## Generate Parameters for LV1 model according to soft mean field approximation of Bastolla et al. Nature 458, 2009
-  alphaP = runif(numP) * 0.3 + 0.05  # Intrinsic growth, uniformly in [0.05, 0.35]
-  alphaA = runif(numA) * 0.3 + 0.05  # Intrinsic growth, uniformly in [0.05, 0.35]
+  #gamma0 = 0.2  # the mean value of mutualistic interaction strength
+  gammaP = gamma0 * dataset
+  gammaA = gamma0 * t(dataset)
   
-  betaP = matrix(runif(numP * numP), ncol = numP) * 0.04 + 0.01  # Interspecific competition, uniformly in [0.01, 0.05]
-  diagP = runif(numP) * 0.3 + 10.8  # Intraspecific competition, uniformly in [0.8, 1.1]
-  diag(betaP) = diagP
-  betaA = matrix(runif(numA * numA), ncol = numA) * 0.04 + 0.01  # Interspecific competition, uniformly in [0.01, 0.05]
-  diagA = runif(numA) * 0.3 + 10.8  # Intraspecific competition, uniformly in [0.8, 1.1]
-  diag(betaA) = diagA
-  
-  gammaP = matrix(runif(numP * numA), ncol = numA) * 0.4 + 0.8  # Mutualistic strength between Plants and Animals, uniformly in [0.8, 1.2]
-  gammaP = gammaP * dataset
-  gammaA = matrix(runif(numA * numP), ncol = numP) * 0.4 + 0.8  # Mutualistic strength between Plants and Animals, uniformly in [0.8, 1.2]
-  gammaA = gammaA * t(dataset)
-  
-  r = c(alphaP, alphaA)  # construct the intrinsic growth rate vector
+  #alpha0 = 1  # the mean value of intrinsic growth rate
+  r = rep(alpha0, numP + numA)  # construct the intrinsic growth rate vector
   M = rbind(cbind(-betaP, gammaP), cbind(gammaA, -betaA))  # construct the interaction matrix
   parms = list(r, M)  # parameters
   
   t = seq(1, 500)  # times
-  N0 = runif(numP + numA) + 0.5  # Initial species abundence, uniformly in [0.5, 1.5]
+  N0 = runif(numP + numA) + alpha0  # Initial species abundence, uniformly in [alpha0, alpha0 + 1]
   
   lvout <- ode(y = N0, t, func = lv1, parms = parms, atol = 10^-14, rtol = 10^-12)  # 
+
   Nstar = lvout[nrow(lvout), 2:ncol(lvout)]  # the species abundance at steady state
   Nstar[Nstar < extinct.threshold] = 0  # species with biomass less than the threshold is considered to be extinct
   
-  comm = jacobian.full(y = lvout[nrow(lvout), 2:ncol(lvout)], func = lv1, parms = parms)  # Jacobian matrix in equilibrium
+  comm = jacobian.full(y = Nstar, func = lv1, parms = parms)  # Jacobian matrix in equilibrium
   lev = max(Re(eigen(comm)$values))
   
   survived = sum(Nstar > 0)  # Survived species at equillibrim state
   extinct = sum(Nstar == 0)  # Extinct species at equillibrim state
-  list(survived = survived, extinct = extinct, lev = lev, parms = parms, Nstar = Nstar, comm = comm)
+  list(survived = survived, extinct = extinct, lev = lev, parms = parms, Nstar = Nstar, comm = comm, lvout = lvout)
 }
 
 

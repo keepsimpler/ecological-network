@@ -4,14 +4,14 @@ source('DE.R')
 n1 = 25  # number of plants
 n2 = 25  # number of animal pollinators
 k = 4  # average degree of species
-G = graph.connected(s = c(n1, n2), k = k, gtype = 'bipartite')
+G = graph.connected(s = c(n1, n2), k = k, gtype = 'bipartite')  # generate a random connected bipartite graph
 A = get.incidence(G)  # get the incidence matrix of bipartite network [G]
 
 
 #### Check the feasible equilibrium of LV1 model
-repeat {
+repeat {  # run ODE untill finding a feasible solution, i.e. all species survived in steady state
   res = lv1.check(A)
-  if (res$extinct == 0) break  # until the situation that all species survived at steady state
+  if (res$extinct == 0) break 
 }
 M = res$parms[[2]]  # interaction matrix of feasible solution
 r = res$parms[[1]]  # intrinsic matrix of feasible solution
@@ -22,6 +22,29 @@ sum(Nstar * M - J > 1e-7)  # relation between Jacobian matrix and (M, Nstar)
 sum(as.numeric(-solve(M) %*% r) - Nstar > 1e-10)
 
 
+###############################################################################
+# the soft mean field approximation of LV1 model from Bastolla et al. Nature 458, 2009
+# check the relation between range of parameters and the stability :
+# parameters :
+# 1) nestedness : nodf cmnb tr4 
+# 2) rtry : number of tried for randomly structure with definite nestedness ( how to keep the nestedness constant?)
+# 3) alpha0 : [0.01]
+stepwise = 0.05
+result = list()
+for (i in 1:10) {
+  for (alpha0 in seq(stepwise, 1, by = stepwise)) {
+    for (beta0 in seq(stepwise, 1, by = stepwise)) {
+      for (gamma0 in seq(stepwise, 1, by = stepwise)) {
+        res = lv1.check.softmean(dataset = A, alpha0, beta0, gamma0, extinct.threshold = extinct.threshold.default)
+        res = c(res, alpha0 = alpha0, beta0 = beta0, gamma0 = gamma0)
+        result[[length(result)+1]] = res
+        print(paste(alpha0, beta0, gamma0, res$extinct))
+      }
+    }
+  }
+}
+lvout = res$lvout
+matplot(t, lvout[, 2:51], type = "l", lwd = 1.5)
 
 ### Check the hysteresis, two alternative stable states, multiple basins of attractors
 
