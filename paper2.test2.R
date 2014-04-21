@@ -35,6 +35,9 @@ for (i in 1:10) {
   for (alpha0 in seq(stepwise, 1, by = stepwise)) {
     for (beta0 in seq(stepwise, 1, by = stepwise)) {
       for (gamma0 in seq(stepwise, 1, by = stepwise)) {
+        alpha0 = 0.05
+        beta0 = 0.05
+        gamma0 = 0.95
         res = lv1.check.softmean(dataset = A, alpha0, beta0, gamma0, extinct.threshold = extinct.threshold.default)
         res = c(res, alpha0 = alpha0, beta0 = beta0, gamma0 = gamma0)
         result[[length(result)+1]] = res
@@ -44,6 +47,7 @@ for (i in 1:10) {
   }
 }
 lvout = res$lvout
+t = 1:500
 matplot(t, lvout[, 2:51], type = "l", lwd = 1.5)
 
 ### Check the hysteresis, two alternative stable states, multiple basins of attractors
