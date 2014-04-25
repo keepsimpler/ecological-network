@@ -1,8 +1,8 @@
 source('nestedness.R')
 source('DE.R')
 
-n1 = 25  # number of plants
-n2 = 25  # number of animal pollinators
+n1 = 250  # number of plants
+n2 = 250  # number of animal pollinators
 k = 4  # average degree of species
 G = graph.connected(s = c(n1, n2), k = k, gtype = 'bipartite')  # generate a random connected bipartite graph
 A = get.incidence(G)  # get the incidence matrix of bipartite network [G]

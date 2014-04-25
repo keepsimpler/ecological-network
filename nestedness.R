@@ -84,7 +84,7 @@ rewirelinks.richer <- function(B, HowManyToTry) {
 #' @param HowManyToTry the times to try for swapping links
 #' @return the incidence matrix whose links being randomly swapped.
 #' @details .  
-swaplinks <- function(B, HowManyToTry) {
+swaplinks <- function(B, HowManyToTry = 5000) {
   count1 <- 0
   NumP <- dim(B)[1]
   NumA <- dim(B)[2]
