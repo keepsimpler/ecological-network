@@ -1,11 +1,20 @@
 ###############################################################################
-# functions accompany with paper:
+# functions accompanying with paper:
 # Heterogeneity in ecoogical mutualistic networks dominantly determines community stability
-# Some codes are extracted and modified from Allesina et al 's codes on:
+# Some code are extracted and modified from Allesina et al 's code available at:
 # https://bitbucket.org/AllesinaLab/superellipses
 
 require('MASS')
-library(bipartite)
+library(bipartite)  # use 'nested' function
+library(igraph)  # generate bipartite random graphs
+library(plyr)  # Split-Apply-Combine strategy of data analysis
+library(reshape2)  # melt and cast of data
+library(ggplot2)
+
+library(doMC)  # 
+registerDoMC()  # register Multi Cores
+getDoParWorkers()  # get available Cores
+
 
 
 ###############################################################################
@@ -197,8 +206,8 @@ model <- function(params, s, tr2, tr4, tr6) {
 ## Functions for Null Models
 ## NM1 : Maintain topological structure, Shuffle weights
 ## NM2 : Maintain topological structure, Reassign weights uniformly
-## NM3 : Maintain degree distribution, Shuffle weights
-## NM5 : Rewire links uniformly, Shuffle weights
+## NM3 : Maintain degree distribution, Swap links
+## NM4 : Rewire links uniformly
 ###############################################################################
 
 
@@ -230,6 +239,46 @@ rlnorm.fixsum <- function(n, total, sigmalog) {
   return(exp(X))
 }
 
+###############################################################################
+#' @title nestedness introduced by Bastolla and collaborators based on ComMon NeighBors.
+#' 
+#' @param comm, incidence matrix of bipartite network, rows and cols represent two groups of nodes/species
+#' @return the nestedness based on common neighbors.
+#' @details .  
+nest.cmnb <- function (comm)
+{
+  comm <- ifelse(comm != 0, 1, 0)  # get binary network
+  rfill <- rowSums(comm)  # degrees of row nodes
+  cfill <- colSums(comm)  # degrees of col nodes
+  #if (any(rfill == 0) || any(cfill == 0)) 
+  #  stop('can not have rows or cols with all zero values!')
+  nr <- NROW(comm)  # number of row nodes
+  nc <- NCOL(comm)  # number of col nodes
+  fill <- sum(rfill)/prod(dim(comm))  # connectence
+  
+  overlapP <- comm %*% t(comm)  # overlap matrix of Plants (rows)
+  tmp1 = matrix(rep(rfill, times = nr), byrow = T, ncol = nr) 
+  tmp2 = matrix(rep(rfill, times = nr), byrow = F, ncol = nr)
+  tmp = pmin(tmp1, tmp2)  # Get the minimal of degree of two Plants who have common neighbors
+  tmp[tmp == 0] = 1e-10  # avoid the case of dividend 0
+  overlapP = overlapP / tmp
+  
+  overlapA <- t(comm) %*% comm  # overlap matrix of Animals
+  tmp1 = matrix(rep(cfill, times = nc), byrow = T, ncol = nc) 
+  tmp2 = matrix(rep(cfill, times = nc), byrow = F, ncol = nc)
+  tmp = pmin(tmp1, tmp2) # Get the minimal of degree of two Animals who have common neighbors
+  tmp[tmp == 0] = 1e-10  # avoid the case of dividend 0
+  overlapA = overlapA / tmp
+  
+  N.rows <- mean(overlapP[upper.tri(overlapP)])
+  N.columns <- mean(overlapA[upper.tri(overlapA)])
+  CMNB <- sum(c(overlapP[upper.tri(overlapP)], overlapA[upper.tri(overlapA)]))/
+    ((nc * (nc - 1)/2) + (nr * (nr - 1)/2))
+  out <- list(fill = fill, N.columns = N.columns, N.rows = N.rows, CMNB = CMNB)
+  out
+}
+
+
 #' @title Get different measures of bipartite networks
 #' @param A, the incidence matrix of bipartite network
 #' @return a list of:
@@ -238,6 +287,7 @@ rlnorm.fixsum <- function(n, total, sigmalog) {
 get.measures <- function(A) {
   # the nestedness measures 
   nestedness = nested(A, method = c('NODF', 'NODF2', 'weighted NODF', 'wine'))
+  cmnb = nest.cmnb(A)
   
   Adj = get.adjacency(A)  # get the adjacency matrix of incidence matrix
   s = dim(Adj)[1]  # the number of species (nodes)
@@ -256,8 +306,10 @@ get.measures <- function(A) {
   C4 = sum((Adj %*% Adj)^2) - 2*Hk + sk  # the four-link cycles
   lev.bin = Re(eigen(Adj)$value[1])  # the largest eigenvalue of binary bipartite network
   c(s = s, Hq = Hq, Hw = Hw, wC4 = wC4, w2 = w2, w = w, Hk = Hk, C4 = C4, sk = sk, 
-    lev.weight = lev.weight, lev.bin = lev.bin, nestedness)
+    lev.weight = lev.weight, lev.bin = lev.bin, cmnb = cmnb$CMNB, nestedness)
 }
+
+
 
 
 ###############################################################################
@@ -279,7 +331,7 @@ swaplinks <- function(B, HowManyToTry = 5000) {
     col1 <- sample(1:NumA, 1)
     col2 <- sample(1:NumA, 1)
     ## check swappable
-    if (B[row1, col1] == 0.0 && B[row1, col2] > 0.0 && B[row2, col1] > 0.0 && B[row2, col2] == 0.0){
+    if (B[row1, col1] == 0.0 && B[row1, col2] != 0.0 && B[row2, col1] != 0.0 && B[row2, col2] == 0.0){
       ## swap
       B[row1, col1] <- B[row1, col2]
       B[row1, col2] <- 0.0
@@ -287,7 +339,7 @@ swaplinks <- function(B, HowManyToTry = 5000) {
       B[row2, col1] <- 0.0
     }
     else{
-      if (B[row1, col1] > 0.0 && B[row1, col2] == 0.0 && B[row2, col1] == 0.0 && B[row2, col2] > 0.0){
+      if (B[row1, col1] != 0.0 && B[row1, col2] == 0.0 && B[row2, col1] == 0.0 && B[row2, col2] != 0.0){
         ## swap
         B[row1, col2] <- B[row1, col1]
         B[row1, col1] <- 0.0
@@ -299,4 +351,107 @@ swaplinks <- function(B, HowManyToTry = 5000) {
   return(B)
 }
 
+## Copyed from Allesina's code
+PDFSuperEllipseSymmetric <- function(x, r, n){
+  LogDenominator <- log(2) + (1/n) * log((r)^n - abs(x)^n)
+  LogNumerator <- log(4) + 2 * log(r) + 2 * lgamma(1 + 1 / n) - lgamma(1 + 2/n)
+  res <- (exp(LogDenominator - LogNumerator))
+  res[is.nan(res)] <- 0
+  return(res)
+}
+
+FindSECounts <- function(Hbreaks, Hcounts, r, n){
+  data.points <- length(Hcounts)
+  for (i in 1:data.points){
+    Hcounts[i] <- integrate(PDFSuperEllipseSymmetric, Hbreaks[i], Hbreaks[i+1], r, n)$value
+  } 
+  return(Hcounts)
+}
+
+
+###############################################################################
+#' @title Generate a connected graph using package [igraph]
+#'
+#' @param s, size of network. 
+#' if graph type is bipartite, s[1], s[2] represent size of two groups; else s is size of network
+#' @param k, average degree for the network.
+#' 1 < k < s for unipartite network, 1 < k < s[1]*s[2]/(s[1]+s[2]) for bipartite network.
+#' @param gtype, Graph type generated: 'bipartite'.
+#' @param maxtried, the maximum number of tried times. 
+#' If have tried [maxtried] times, the function will return no matter whether the connected graph is generated.
+#' @param ... the parms conform to the implementation functions of [igraph]
+#' @return the connected graph
+#' @details .  
+#' @import igraph
+graph.connected <- function(s, k, gtype, maxtried = 100, ...) {
+  library(igraph)
+  if (gtype == 'bipartite' && is.na(s[2])) {  # the bipartite graph need size of two groups of nodes
+    warning('sizes of TWO groups of nodes should be designated. 
+            we have assumed the size of second group equal to the size of first group.')
+    s[2] = s[1]  # if missed second size, we assume it equal to the first size.
+  }
+  count = 0
+  repeat {  # generate a connected graph
+    if (gtype == 'bipartite') {
+      G = bipartite.random.game(s[1], s[2], type = 'gnm', m = k * (s[1] + s[2]))
+    }
+    else {
+      G = erdos.renyi.game(s, m = k * s, type = 'gnm')
+    }
+    if (igraph::is.connected(G)) break  # until a connected graph is generated
+    count = count + 1
+    if (count == maxtried) {
+      warning(paste('Tried', maxtried, 'times, But connected graph still cannot be generated.'))
+      break
+    }
+  }
+  G
+}
+
+
+# Multiple plot function
+#
+# ggplot objects can be passed in ..., or to plotlist (as a list of ggplot objects)
+# - cols:   Number of columns in layout
+# - layout: A matrix specifying the layout. If present, 'cols' is ignored.
+#
+# If the layout is something like matrix(c(1,2,3,3), nrow=2, byrow=TRUE),
+# then plot 1 will go in the upper left, 2 will go in the upper right, and
+# 3 will go all the way across the bottom.
+#
+multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
+  require(grid)
+  
+  # Make a list from the ... arguments and plotlist
+  plots <- c(list(...), plotlist)
+  
+  numPlots = length(plots)
+  
+  # If layout is NULL, then use 'cols' to determine layout
+  if (is.null(layout)) {
+    # Make the panel
+    # ncol: Number of columns of plots
+    # nrow: Number of rows needed, calculated from # of cols
+    layout <- matrix(seq(1, cols * ceiling(numPlots/cols)),
+                     ncol = cols, nrow = ceiling(numPlots/cols))
+  }
+  
+  if (numPlots==1) {
+    print(plots[[1]])
+    
+  } else {
+    # Set up the page
+    grid.newpage()
+    pushViewport(viewport(layout = grid.layout(nrow(layout), ncol(layout))))
+    
+    # Make each plot, in the correct location
+    for (i in 1:numPlots) {
+      # Get the i,j matrix positions of the regions that contain this subplot
+      matchidx <- as.data.frame(which(layout == i, arr.ind = TRUE))
+      
+      print(plots[[i]], vp = viewport(layout.pos.row = matchidx$row,
+                                      layout.pos.col = matchidx$col))
+    }
+  }
+}
 

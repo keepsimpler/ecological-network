@@ -1,18 +1,19 @@
 require('igraph')
 require('ggplot2')
 n = 200  # node number
-d = 5 # node degree
+d = 20 # node degree
 edges = n * d #
 tried = 500
 
 maxeig.entropy.sf.nm = data.frame(alpha=numeric(0), maxeig.sf=numeric(0), entropy.sf=numeric(0), squaresum.degrees.sf=numeric(0))
 for (i in seq(from=2, to=6, by=0.01)) {
   #gnm = erdos.renyi.game(n, edges, type="gnm")
+  i = 4
   repeat {
     gsf = static.power.law.game(n, edges, i)
     if (is.connected(gsf)) break
   }
-  asf = get.adjacency(gsf)
+  asf = igraph::get.adjacency(gsf)
   maxeig.sf = max(Re(eigen(asf)$values))
   degrees.sf = degree(gsf)
   degrees.sf = degrees.sf / sum(degrees.sf)

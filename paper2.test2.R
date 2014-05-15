@@ -1,12 +1,54 @@
+mar1 <- function(A, B, SigmaE, t, X0 = NULL) {
+  if (dim(B)[1] != dim(B)[2])
+    stop('Interaction matrix B should be a square matrix.')
+  m = dim(B)[1]  # dimension of AR model
+  eig = eigen(B, only.values = TRUE)$values
+  if ((any(Mod(eig) > 1)))
+    warning('Unstable AR model.')
+  require(MASS)
+  # m*1 vector of process errors that has a multivariate normal distribution
+  # with mean vector 0 and covariance matrix SigmaE
+  E = mvrnorm(t, rep(0, m), SigmaE)  
+  E = rep(1, t) %*% t(A) + E  # A + E
+  I = diag(1, m)
+  Mu = solve(I - B) %*% A  # mean vector of stationary distribution
+  Mu = as.vector(Mu)
+  if (is.null(X0))  # if initial state values are not provided, use the mean vector of stationary distribution.
+    X0 = Mu
+  X = matrix(0, nrow = 1 + t, ncol = m)
+  X[1, ] = X0
+  for (k in seq(1, t))
+    X[k + 1, ] = X[k, ] %*% B + E[k, ]
+  X
+}
+
+A=c(0.25,0.1)
+B=rbind(c(0.4, 0.3),c(0.3,0.7))
+m = dim(B)[1]
+SigmaE=rbind(c(1,0),c(0,1))
+t = 1000
+out = mar1(A, B, SigmaE, t, X0 = c(0,0))
+apply(out[500:t,], 2, mean)
+var(out[500:t,])
+solve(diag(1,2) - B) %*% A
+solve(diag(1,m^2) - kronecker(B, B)) %*% as.vector(SigmaE)
+plot(1:(t+1), out[,2], type = 'l')
+
+
+
+
+
+
+
 source('nestedness.R')
 source('DE.R')
 
-n1 = 250  # number of plants
-n2 = 250  # number of animal pollinators
-k = 4  # average degree of species
+n1 = 200  # number of plants
+n2 = 200  # number of animal pollinators
+k = 2  # average degree of species
 G = graph.connected(s = c(n1, n2), k = k, gtype = 'bipartite')  # generate a random connected bipartite graph
 A = get.incidence(G)  # get the incidence matrix of bipartite network [G]
-
+numP = dim(A)[1]; numA = dim(A)[2]
 
 #### Check the feasible equilibrium of LV1 model
 repeat {  # run ODE untill finding a feasible solution, i.e. all species survived in steady state
@@ -35,10 +77,12 @@ for (i in 1:10) {
   for (alpha0 in seq(stepwise, 1, by = stepwise)) {
     for (beta0 in seq(stepwise, 1, by = stepwise)) {
       for (gamma0 in seq(stepwise, 1, by = stepwise)) {
-        alpha0 = 0.05
-        beta0 = 0.05
-        gamma0 = 0.95
-        res = lv1.check.softmean(dataset = A, alpha0, beta0, gamma0, extinct.threshold = extinct.threshold.default)
+        alpha0 = 0.3
+        beta0 = 0.25
+        gamma0 = 0.45
+        # N0 = runif(numP + numA) + alpha0  # Initial species abundence, uniformly in [alpha0, alpha0 + 1]
+        N0 = c(rep(5, numP + numA - 1), 1)
+        res = lv1.check.softmean(dataset = A, alpha0, beta0, gamma0, N0, extinct.threshold = extinct.threshold.default)
         res = c(res, alpha0 = alpha0, beta0 = beta0, gamma0 = gamma0)
         result[[length(result)+1]] = res
         print(paste(alpha0, beta0, gamma0, res$extinct))
@@ -56,9 +100,9 @@ df.hysteresis = data.frame(nest.nodf = numeric(0), Nstars = numeric(0), levs = n
 
 for (nest in seq(0.1, 0.7, by = 0.05)) {
   ## Generate bipartite network with definate nestedness
-  #nest = 0.15
+  nest = 0.15
   repeat {
-    A = rewirelinks.richer(A, 1)
+    A = rewirelinks.richer(A, 100)
     if (nest.nodf2(A)$NODF > nest) break
   }
   print(nest.nodf2(A)$NODF)
