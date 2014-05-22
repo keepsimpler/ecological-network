@@ -1,6 +1,9 @@
 Trade off between max eigen of bipartite matrix and norm of inverse of bipartite matrix.
 ========================================================
 
+<k> increase, gap between largest and second eigenvalue increase; <k> fix, <k^2> increase, gap also increase.
+
+power eigenvalue decompose inverse
 
 ### Check the relation between nestedness and fraction of feasible steady states
 ```{r}
@@ -74,9 +77,75 @@ for (i in 1:totalsteps) {
 ```
 
 
+
+```{r}
+ns = seq(100, 1000, by = 100)
+steps = seq(1, 10)
+gap.bipartite = ldply(ns, function(n) {
+  G = graph.connected(s = c(n, n), k = 4, gtype = 'bipartite')  # generate a random connected bipartite graph
+  A = igraph::get.incidence(G)
+  ldply(steps, .parallel = TRUE, function(step) {
+    print(paste(n, step))    
+    B = rewirelinks.richer(A, HowManyToTry = step * 500)
+    B = swaplinks(B, HowManyToTry = 5000)
+    C = get.adjacency(B)
+    hk = sum(rowSums(C)^2)
+    sk = sum(rowSums(C))
+    lev = eigen(C)$values[1]
+    sev = eigen(C)$values[2]
+    # mev = eigen(B)$values[n]
+    r = lev / sev
+    c(n, step, hk, sk, r, lev, sev)
+  })
+})
+colnames(gap.bipartite2) <- c('n', 'step', 'hk', 'sk', 'r', 'lev', 'sev')
+gap.bipartite2$chk = gap.bipartite2$hk / gap.bipartite2$sk
+ggplot(data = gap.bipartite2, aes(x = chk, y = r)) +
+  geom_line() +
+  facet_wrap(~n, scales = 'free')
+
+
+```
+
+
+
 You can also embed plots, for example:
 
 ```{r fig.width=7, fig.height=6}
-plot(cars)
+library(agridat)
+
+federer.tobacco <- federer.tobacco[order(as.numeric(federer.tobacco$block), as.numeric(federer.tobacco$row)),]
+
+federer.tobacco$dose <- factor(federer.tobacco$dose)
+
+levelplot(dose ~ as.numeric(block)*rev(as.numeric(row)), 
+          scales=list(x=list(at=NULL), y=list(at=as.numeric(federer.tobacco$row), 
+                                              labels=as.character(rev(as.numeric(federer.tobacco$row))))),
+          aspect=0.4, panel=function(x,y,...) {
+  panel.levelplot(x,y,...)
+  grid.lines(x=c(0.125,0.125), y=c(0,1), default.units="npc", gp=gpar(lwd=2))
+  grid.lines(x=c(0.25,0.25), y=c(0,1), default.units="npc", gp=gpar(lwd=2))
+  grid.lines(x=c(0.375,0.375), y=c(0,1), default.units="npc", gp=gpar(lwd=2))
+  grid.lines(x=c(0.5,0.5), y=c(0,1), default.units="npc", gp=gpar(lwd=2))
+  grid.lines(x=c(0.625,0.625), y=c(0,1), default.units="npc", gp=gpar(lwd=2))
+  grid.lines(x=c(0.75,0.75), y=c(0,1), default.units="npc", gp=gpar(lwd=2))
+  grid.lines(x=c(0.875,0.875), y=c(0,1), default.units="npc", gp=gpar(lwd=2))
+  ltext(x=x, y=y, label=federer.tobacco$dose, cex=1)
+}, xlab="", ylab="field row", 
+main="Federer tobacco height field layout with\nseed radiation dose treatment allocation", 
+colorkey=FALSE, data=federer.tobacco,
+par.settings=list(regions=list(col=col2(100))))
+trellis.focus("panel", 1, 1, clip.off=TRUE)
+grid.text("I", 0.06, 1.04)
+grid.text("II", 0.185, 1.04)
+grid.text("III", 0.31, 1.04)
+grid.text("IV", 0.435, 1.04)
+grid.text("V", 0.56, 1.04)
+grid.text("VI", 0.685, 1.04)
+grid.text("VII", 0.81, 1.04)
+grid.text("VIII", 0.935, 1.04)
+trellis.unfocus()
 ```
+
+
 
