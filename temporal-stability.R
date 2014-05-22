@@ -13,7 +13,9 @@ parms.lv1.softmean <- function(A, gamma0 = 1, alpha0 = 1) {
   M[M > 0] = gamma0
   diag(M) = beta0
   r = rep(alpha0, numP + numA)
-  list(r, M)
+  parmsV = list(r, M)
+  initV = - solve(M) %*% r
+  list(parmsV, initV)
 }
 
 #' @title Lotka-Volterra (LV) Equations of Holling type I
@@ -25,21 +27,35 @@ parms.lv1.softmean <- function(A, gamma0 = 1, alpha0 = 1) {
 #' @return the derivation
 #' @details .
 #' @import deSolve
-model.lv1 <- function(t, N, parms) {
+model.lv1 <- function(time, init, parms, ...) {
+  S = approxTime1(inputs, time, rule=2)["s.in"]
   r = parms[[1]]  # intrinsic growth rate
   M = parms[[2]]  # interaction matrix
+  N = init
   dN <- N * (r + M %*% N)
   list(c(dN))
 }
 
-
+parms.and.init = parms.lv1.softmean(Safariland.C.Pre)
 LV1 <- odeModel(
   main = model.lv1, 
-  parms = parms.lv1.softmean(Safariland.C.Pre),
-  times = c(from=1, to=50, by = 1),
-  init = rep(1, 31),
+  parms = parms.and.init[[1]] ,
+  times = c(from = 1, to = 50, by = 0.5),
+  init = as.numeric(parms.and.init[[2]]),
   solver = 'lsoda')
 
+initfunc(LV1) <- function(obj) {
+  tt <- fromtoby(times(obj))
+  inputs(obj) <- as.matrix(data.frame(
+    time = tt,
+    s.in = pmax(rnorm(tt, mean=1, sd=0.5), 0)
+  ))
+  obj
+}
+
+
+
+LV1 <- initialize(LV1)
 LV1 <- sim(LV1)
-plot(LV1)
+#plot(LV1)
 
