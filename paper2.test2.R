@@ -1,12 +1,12 @@
 source('nestedness.R')
 source('DE.R')
 
-n1 = 250  # number of plants
-n2 = 250  # number of animal pollinators
-k = 4  # average degree of species
+n1 = 200  # number of plants
+n2 = 200  # number of animal pollinators
+k = 2  # average degree of species
 G = graph.connected(s = c(n1, n2), k = k, gtype = 'bipartite')  # generate a random connected bipartite graph
 A = get.incidence(G)  # get the incidence matrix of bipartite network [G]
-
+numP = dim(A)[1]; numA = dim(A)[2]
 
 #### Check the feasible equilibrium of LV1 model
 repeat {  # run ODE untill finding a feasible solution, i.e. all species survived in steady state
@@ -35,10 +35,12 @@ for (i in 1:10) {
   for (alpha0 in seq(stepwise, 1, by = stepwise)) {
     for (beta0 in seq(stepwise, 1, by = stepwise)) {
       for (gamma0 in seq(stepwise, 1, by = stepwise)) {
-        alpha0 = 0.05
-        beta0 = 0.05
-        gamma0 = 0.95
-        res = lv1.check.softmean(dataset = A, alpha0, beta0, gamma0, extinct.threshold = extinct.threshold.default)
+        alpha0 = 0.3
+        beta0 = 0.25
+        gamma0 = 0.45
+        # N0 = runif(numP + numA) + alpha0  # Initial species abundence, uniformly in [alpha0, alpha0 + 1]
+        N0 = c(rep(5, numP + numA - 1), 1)
+        res = lv1.check.softmean(dataset = A, alpha0, beta0, gamma0, N0, extinct.threshold = extinct.threshold.default)
         res = c(res, alpha0 = alpha0, beta0 = beta0, gamma0 = gamma0)
         result[[length(result)+1]] = res
         print(paste(alpha0, beta0, gamma0, res$extinct))
@@ -56,9 +58,9 @@ df.hysteresis = data.frame(nest.nodf = numeric(0), Nstars = numeric(0), levs = n
 
 for (nest in seq(0.1, 0.7, by = 0.05)) {
   ## Generate bipartite network with definate nestedness
-  #nest = 0.15
+  nest = 0.15
   repeat {
-    A = rewirelinks.richer(A, 1)
+    A = rewirelinks.richer(A, 100)
     if (nest.nodf2(A)$NODF > nest) break
   }
   print(nest.nodf2(A)$NODF)

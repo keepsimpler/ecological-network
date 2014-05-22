@@ -2,24 +2,39 @@ library(vegan)
 library(bipartite)
 library(igraph)
 
+get.backtrack <- function(g){
+  n <- ecount(g)
+  g <- as.directed(g)
+  h <- line.graph(g)
+  P <- rbind(1 : n, (n + 1) : (2 * n))
+  P <- cbind(P, P[c(2, 1), ])
+  h <- h - edges(E(h, P))
+  igraph::get.adjacency(h)
+}
+
+
 ###############################################################################
 #' @title Generate a connected graph using package [igraph]
 #'
-#' @param s size of network. 
+#' @param s, size of network. 
 #' if graph type is bipartite, s[1], s[2] represent size of two groups; else s is size of network
-#' @param k average degree for the network.
+#' @param k, average degree for the network.
 #' 1 < k < s for unipartite network, 1 < k < s[1]*s[2]/(s[1]+s[2]) for bipartite network.
-#' @param gtype Graph type generated: 'bipartite'
+#' @param gtype, Graph type generated: 'bipartite'.
+#' @param maxtried, the maximum number of tried times. 
+#' If have tried [maxtried] times, the function will return no matter whether the connected graph is generated.
 #' @param ... the parms conform to the implementation functions of [igraph]
 #' @return the connected graph
 #' @details .  
 #' @import igraph
-graph.connected <- function(s, k, gtype, ...) {
+graph.connected <- function(s, k, gtype, maxtried = 100, ...) {
   library(igraph)
   if (gtype == 'bipartite' && is.na(s[2])) {  # the bipartite graph need size of two groups of nodes
-    warning('sizes of TWO node groups should be designated. we have assumed second size to be the first size.')
+    warning('sizes of TWO groups of nodes should be designated. 
+            we have assumed the size of second group equal to the size of first group.')
     s[2] = s[1]  # if missed second size, we assume it equal to the first size.
   }
+  count = 0
   repeat {  # generate a connected graph
     if (gtype == 'bipartite') {
       G = bipartite.random.game(s[1], s[2], type = 'gnm', m = k * (s[1] + s[2]))
@@ -28,6 +43,11 @@ graph.connected <- function(s, k, gtype, ...) {
       G = erdos.renyi.game(s, m = k * s, type = 'gnm')
     }
     if (igraph::is.connected(G)) break  # until a connected graph is generated
+    count = count + 1
+    if (count == maxtried) {
+      warning(paste('Tried', maxtried, 'times, But connected graph still cannot be generated.'))
+      break
+    }
   }
   G
 }
@@ -133,29 +153,32 @@ order.by.rowsums.and.colsums <- function(comm, decreasing = FALSE) {
 ### input: incident matrix
 nest.cmnb <- function (comm)
 {
-  comm <- ifelse(comm > 0, 1, 0)  # get binary network
-  rfill <- rowSums(comm)
-  cfill <- colSums(comm)
-  if (any(rfill == 0) || any(cfill == 0)) 
-    stop('can not have zero rows and cols!')
-  nr <- NROW(comm)
-  nc <- NCOL(comm)
+  comm <- ifelse(comm != 0, 1, 0)  # get binary network
+  rfill <- rowSums(comm)  # degrees of row nodes
+  cfill <- colSums(comm)  # degrees of col nodes
+  #if (any(rfill == 0) || any(cfill == 0)) 
+  #  stop('can not have rows or cols with all zero values!')
+  nr <- NROW(comm)  # number of row nodes
+  nc <- NCOL(comm)  # number of col nodes
   fill <- sum(rfill)/prod(dim(comm))  # connectence
 
-  overlapP <- comm %*% t(comm)  # overlap matrix of Plants
+  overlapP <- comm %*% t(comm)  # overlap matrix of Plants (rows)
   tmp1 = matrix(rep(rfill, times = nr), byrow = T, ncol = nr) 
   tmp2 = matrix(rep(rfill, times = nr), byrow = F, ncol = nr)
-  tmp = pmin(tmp1, tmp2)
+  tmp = pmin(tmp1, tmp2)  # Get the minimal of degree of two Plants who have common neighbors
+  tmp[tmp == 0] = 1e-10  # avoid the case of dividend 0
   overlapP = overlapP / tmp
+  
   overlapA <- t(comm) %*% comm  # overlap matrix of Animals
   tmp1 = matrix(rep(cfill, times = nc), byrow = T, ncol = nc) 
   tmp2 = matrix(rep(cfill, times = nc), byrow = F, ncol = nc)
-  tmp = pmin(tmp1, tmp2)
+  tmp = pmin(tmp1, tmp2) # Get the minimal of degree of two Animals who have common neighbors
+  tmp[tmp == 0] = 1e-10  # avoid the case of dividend 0
   overlapA = overlapA / tmp
 
   N.rows <- mean(overlapP[upper.tri(overlapP)])
   N.columns <- mean(overlapA[upper.tri(overlapA)])
-  CMNB <- (sum(c(overlapP[upper.tri(overlapP)], overlapA[upper.tri(overlapA)])))/
+  CMNB <- sum(c(overlapP[upper.tri(overlapP)], overlapA[upper.tri(overlapA)]))/
     ((nc * (nc - 1)/2) + (nr * (nr - 1)/2))
   out <- list(fill = fill, N.columns = N.columns, N.rows = N.rows, CMNB = CMNB)
   out

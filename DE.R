@@ -155,7 +155,7 @@ lv1.check <- function(dataset, extinct.threshold = 10^-8) {
 }
 
 #### the soft mean field approximation of LV1 model from Bastolla et al. Nature 458, 2009
-lv1.check.softmean <- function(dataset, alpha0, beta0, gamma0, extinct.threshold = 10^-8) {
+lv1.check.softmean <- function(dataset, alpha0, beta0, gamma0, N0, extinct.threshold = 10^-8) {
   dataset[dataset > 0] = 1  # insure input is a binary network
   numP = dim(dataset)[1]  # number of Plants
   numA = dim(dataset)[2]  # number of Animals
@@ -178,7 +178,7 @@ lv1.check.softmean <- function(dataset, alpha0, beta0, gamma0, extinct.threshold
   parms = list(r, M)  # parameters
   
   t = seq(1, 500)  # times
-  N0 = runif(numP + numA) + alpha0  # Initial species abundence, uniformly in [alpha0, alpha0 + 1]
+  # N0 = runif(numP + numA) + alpha0  # Initial species abundence, uniformly in [alpha0, alpha0 + 1]
   
   lvout <- ode(y = N0, t, func = lv1, parms = parms, atol = 10^-14, rtol = 10^-12)  # 
 
