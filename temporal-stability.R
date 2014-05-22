@@ -28,15 +28,17 @@ parms.lv1.softmean <- function(A, gamma0 = 1, alpha0 = 1) {
 #' @details .
 #' @import deSolve
 model.lv1 <- function(time, init, parms, ...) {
-  S = approxTime1(inputs, time, rule=2)["s.in"]
-  r = parms[[1]]  # intrinsic growth rate
+  S = approxTime1(inputs, time, rule=2)
+  r = S[2:length(S)]
+  #r = parms[[1]]  # intrinsic growth rate
   M = parms[[2]]  # interaction matrix
   N = init
   dN <- N * (r + M %*% N)
   list(c(dN))
 }
-
-parms.and.init = parms.lv1.softmean(Safariland.C.Pre)
+G = graph.connected(c(10,10), k = 2, gtype = "bipartite")
+A = igraph::get.incidence(G)
+parms.and.init = parms.lv1.softmean(A)
 LV1 <- odeModel(
   main = model.lv1, 
   parms = parms.and.init[[1]] ,
@@ -46,10 +48,12 @@ LV1 <- odeModel(
 
 initfunc(LV1) <- function(obj) {
   tt <- fromtoby(times(obj))
-  inputs(obj) <- as.matrix(data.frame(
-    time = tt,
-    s.in = pmax(rnorm(tt, mean=1, sd=0.5), 0)
-  ))
+  n <- length(init(obj))  # species number
+  t <- length(tt)
+  require(plyr)
+  tmp = ldply(rep(n, t), runif, min = 1 - 0.5, max = 1 + 0.5)
+  tmp = data.frame(time = tt, tmp)
+  inputs(obj) <- as.matrix(tmp)
   obj
 }
 
@@ -57,5 +61,5 @@ initfunc(LV1) <- function(obj) {
 
 LV1 <- initialize(LV1)
 LV1 <- sim(LV1)
-#plot(LV1)
+plot(LV1)
 
