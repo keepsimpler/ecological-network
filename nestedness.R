@@ -27,7 +27,7 @@ get.backtrack <- function(g){
 #' @return the connected graph
 #' @details .  
 #' @import igraph
-graph.connected <- function(s, k, gtype, maxtried = 100, ...) {
+graph.connected <- function(s, k, gtype, maxtried = 100, expower = 2.5, ...) {
   library(igraph)
   if (gtype == 'bipartite' && is.na(s[2])) {  # the bipartite graph need size of two groups of nodes
     warning('sizes of TWO groups of nodes should be designated. 
@@ -38,9 +38,11 @@ graph.connected <- function(s, k, gtype, maxtried = 100, ...) {
   repeat {  # generate a connected graph
     if (gtype == 'bipartite') {
       G = bipartite.random.game(s[1], s[2], type = 'gnm', m = k * (s[1] + s[2]))
+    } else if (gtype == 'sf') {
+      G = static.power.law.game(s, k * s, exponent.out = expower)
     }
-    else {
-      G = erdos.renyi.game(s, m = k * s, type = 'gnm')
+    else if (gtype == 'er') {
+      G = erdos.renyi.game(s, p.or.m = k * s, type = 'gnm')
     }
     if (igraph::is.connected(G)) break  # until a connected graph is generated
     count = count + 1
@@ -51,6 +53,44 @@ graph.connected <- function(s, k, gtype, maxtried = 100, ...) {
   }
   G
 }
+
+rewirelinks.richer.bipartite <- function(graph, niter = 1) {
+  library(igraph)
+  if (!is.bipartite(graph)) {
+    stop("Not a bipartite graph object")
+  }
+  iter = 0
+  while (iter < niter) {
+    iter = iter + 1
+    graph2 = graph
+    edges = get.edges(graph2, E(graph2))  # get edges of graph
+    ei = sample(ecount(graph2),1)  # randomly select an edge index
+    e = edges[ei, ]  # get the selected edge
+    vertices = V(graph2)
+    repeat {
+      vi = sample(vcount(graph2), 1) # randomly select a vertex index
+      # if selected vertex belongs to group [FALSE] and has more neighbors than the vertex of the edge
+      # or selected vertex belongs to group [TRUE] and has more neighbors than the vertex of the edge
+      if (vertices$type[vi] == FALSE & length(neighbors(graph2, vi)) >= length(neighbors(graph2, e[2])) |
+            vertices$type[vi] == TRUE & length(neighbors(graph2, vi)) >= length(neighbors(graph2, e[1])))
+        break
+    }
+    if (vertices$type[vi] == FALSE) {
+      # if not (new edge has existed or the old edge is the only edge of vertex e[1])
+      if (!( vi == e[2] | graph2[e[1], vi] == 1 | length(neighbors(graph2, e[1])) == 1 ) ) {
+        graph2[e[1], vi] = 1; graph2[e[1], e[2]] = NULL
+      }
+    }
+    if (vertices$type[vi] == TRUE) {
+      if (!(vi == e[1] | graph2[vi, e[2]] == 1 | length(neighbors(graph2, e[2])) == 1 ) ) {
+        graph2[vi, e[2]] = 1; graph2[e[1], e[2]] = NULL
+      }
+    }
+    ## is connected?
+  }
+  graph2
+}
+plot(G, layout=layout.bipartite)
 
 ###############################################################################
 #' @title Nestedness optimization algrithm by rewiring links to nodes with more links. (richer get richer)
@@ -76,7 +116,7 @@ rewirelinks.richer <- function(B, HowManyToTry) {
     }
     ## random choose another species
     if (runif(1) < 0.5) {  # choose another plant
-      row2 =  sample(1:row1, 1)  # choose random plant with more interactions which is entured by [sortweb]
+      row2 =  sample(1:row1, 1)  # choose random plant with more interactions which is ensured by [sortweb]
       # Three exceptions: 1. the new chosen species [row2] is same with the old species [row1]
       # 2. the new chosen species [row2] already has interaction with [col1]
       # 3. the old species [row1] has only one interaction.

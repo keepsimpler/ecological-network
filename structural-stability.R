@@ -23,6 +23,7 @@ AlphaT = t(Alpha) %*% U
 
 AlphaT == (Lambda * NstarT)
 
+library(bipartite)
 
 # Generate the cooperation matrix M
 # First, generate the structure
@@ -32,39 +33,101 @@ G = graph.connected(c(s1, s2), k = k, gtype = 'bipartite')
 A = igraph::get.incidence(G)
 #A = igraph::get.adjacency(G)
 
-for (i in 1:100) {
+#ss = data.frame(i = numeric(0), abund.mean = numeric(0), abund.sd = numeric(0), lev = numeric(0), sev = numeric(0),
+#                nlev = numeric(0), nsev = numeric(0), eigs.prod = numeric(0), degree.mean = numeric(0), degree.sd = numeric(0))  # Structural Stability
+ss = list()
+for (i in 1:150) {
   M = as.one.mode(A)
-  beta0 = - max(s1, s2) 
+  M2 = M %*% M
+  degrees = rowSums(M)
+  degrees2 = rowSums(M2)
+  #degree.mean = mean(degrees)
+  #degree.sd = sd(degrees)
+  beta0 = - max(s1, s2)/4
+  #beta0 = - rowSums(M) + 1
   diag(M) = beta0
   U = eigen(M)$vectors
-  #Alpha = - U[,1]  # intrinsic growth rate parallel with the principal eigenvector (corresponding to the dominant eigenvalue)
-  #Alpha = rep(2, s1 + s2)
+  eigs = eigen(M)$values
   Alpha = runif(s1 + s2, min = 2, max = 2)
   Nstar = - solve(M) %*% Alpha  # the feasible fixed point
-  Phi = M * as.vector(Nstar)  # the community matrix
+  NstarT = t(Nstar) %*% U
+  AlphaT = t(Alpha) %*% U
+  AlphaT == (eigs * NstarT)
+  #Alpha = - U[,1]  # intrinsic growth rate parallel with the principal eigenvector (corresponding to the dominant eigenvalue)
+  #Alpha = rep(2, s1 + s2)
+  #Phi = M * as.vector(Nstar)  # the community matrix
+  #abund.mean = mean(Nstar)
+  #abund.sd = sd(Nstar)
+  #lev = eigs[1]
+  #sev = eigs[2]
+  #nlev = eigs[s1 + s2]
+  #nsev = eigs[s1 + s2 - 1]
+  #eigs.sum = sum(eigs)
+  #eigs.prod = prod(eigs)^(1/(s1+s2))
+  #levM = max(eigen(M)$values)
+  # Third, rewiring links to get more nested structure
+  A = rewirelinks.richer(A, HowManyToTry = 50)
+  #tmp = data.frame(i = i, abund.mean = abund.mean, abund.sd = abund.sd, lev = lev, sev = sev, nlev = nlev, 
+  #                 nsev = nsev, eigs.prod = eigs.prod, degree.mean = degree.mean, degree.sd = degree.sd)
+  #ss = rbind(ss, tmp)
+  ss[[i]] = list(eigs = eigs, Nstar = Nstar, degrees = degrees, degrees2 = degrees2, 
+                 U = U, NstarT = NstarT, AlphaT = AlphaT)
+  #print(paste(abund.mean, abund.sd, abund.mean / abund.sd, lev, sev, nlev, nsev, eigs.sum, eigs.prod))
+}
+
+tmp = ldply(ss, function(i) {
+  c(Nstar.mean = mean(i$Nstar), Nstar.sd = sd(i$Nstar), Nstar.shannon = sum(i$Nstar * log(i$Nstar)), eigs.sd = sd(i$eigs), 
+    eiv.mean = mean(i$AlphaT * colSums(i$U) / i$eigs), eiv.sd = sd(i$AlphaT * colSums(i$U) / i$eigs),
+    eiv.max = min(colSums(i$U)), eig.max = min(i$eigs), eig.sev =i$eigs[200]/i$eigs[199])
+})
+
+ss[[1]]$Nstar[1] == - sum(ss[[1]]$AlphaT * ss[[1]]$U[1,] / ss[[1]]$eigs)
+sum(colSums(ss[[1]]$U) * ss[[1]]$AlphaT) / (s1 + s2) == mean(Alpha)
+sum(ss[[1]]$AlphaT * colSums(ss[[1]]$U) / ss[[1]]$eigs)
+
+plot(ss[[50]]$AlphaT * colSums(ss[[50]]$U), ss[[50]]$eigs )
+
+colSums(ss[[1]]$U) / ss[[1]]$AlphaT = Alpha
+
+
+s = 200; k = 5
+ldply(seq(from = 2, to = 7, by = 0.1), function(expower) {
+  print(expower)
+  G = graph.connected(s, k, expower = expower, gtype = 'sf')
+  A = igraph::get.adjacency(G)
+  A = as.matrix(A)
+  #eigen(A)
+  #D = diag(rowSums(A) + 0.1) 
+  D = diag(rep(s / 4, s))
+  L = D - A
+  Lambda = eigen(L)$values
+  
+  Alpha = runif(s, min = 2, max = 2)
+  Nstar = solve(L) %*% Alpha  # the feasible fixed point
+  Nstar
+  Phi = - L * as.vector(Nstar)  # the community matrix
   abund.mean = mean(Nstar)
   abund.sd = sd(Nstar)
   lev = max(eigen(Phi)$values)
   sev = eigen(Phi)$values[s1+s2-1]
-  levM = max(eigen(M)$values)
-  A = rewirelinks.richer(A, HowManyToTry = 100)
-  print(paste(abund.mean, abund.sd, abund.mean / abund.sd, lev, sev, levM))
-}
+  levM = max(eigen(L)$values)
+  c(abund.mean, abund.sd, abund.mean / abund.sd, lev, sev, levM)
+})
 
+s = 200; k = 3
+G = graph.connected(s, k, gtype = 'er')
+A = igraph::get.adjacency(G)
+A = as.matrix(A)
+#D = diag(rowSums(A) + 0.1) 
+D = diag(rep(s / 10, s))
+L = D - A
+#Lambda = eigen(L)$values
+U = eigen(L)$vectors
+eigs = eigen(L)$values
+Alpha = runif(s, min = 2, max = 2)
+Nstar = solve(L) %*% Alpha  # the feasible fixed point
+NstarT = t(Nstar) %*% U
+AlphaT = t(Alpha) %*% U
+AlphaT == (eigs * NstarT)
 
-# Second, appoint values to the links of the structure
-gamma0 = 1
-beta0 = - (s/2 + 0.1)  # ensure the negative diagonal dominant of M, thus the existence of the feasible fixed point
-M = A
-M[M > 0] = gamma0
-diag(M) = beta0
-# Third, rewiring links to get more nested structure
-
-
-Alpha = rep(1, s1 + s2)
-Nstar = - solve(M) %*% Alpha
-Phi = M * as.vector(Nstar)  # the community matrix
-# the eigenvalues and eigenvectors of community matrix
-Lambda = eigen(Phi)$values
-U = eigen(Phi)$vectors
-
+AlphaT[200] * U[,200] / eigs[200]
