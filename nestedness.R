@@ -90,7 +90,7 @@ rewirelinks.richer.bipartite <- function(graph, niter = 1) {
   }
   graph2
 }
-plot(G, layout=layout.bipartite)
+#plot(G, layout = layout.bipartite)
 
 ###############################################################################
 #' @title Nestedness optimization algrithm by rewiring links to nodes with more links. (richer get richer)

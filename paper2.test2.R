@@ -150,3 +150,29 @@ degrees^2  # the number of neighbors of neighbors of species
 print(paste(sum(B2), sum(degrees^2)))  # 
 
 
+########## Check the assortativity of random bipartite networks
+## 1. the dis-assortativity increase as rewiring links that increase the degrees of node with more degrees (richer get richer)
+## 2. swapping links that keep the degree distribution of nodes don't change the assortativity
+## 3. when [numP] / [numA] <> 1, the dis-assortativity increase.
+numP = 100; numA = 100; k = 3
+assort = list()
+G = graph.connected(s = c(numP, numA), k = k, gtype = 'bipartite')
+for (i in 1:100) {
+  print(paste(i, is.connected(G), assortativity.degree(G)))
+  A = igraph::get.incidence(G)
+  repeat {
+    B = rewirelinks.richer(A, HowManyToTry = 50)
+    if (is.connected(graph.incidence(B))) {
+      G = graph.incidence(B)
+      break
+    }
+  }
+  A = igraph::get.incidence(G)
+  for (j in 1:10) {
+    B = swaplinks(A, HowManyToTry = 5000)
+    G2 = graph.incidence(B)
+    assort[[(i-1)* 10 + j]] = c(i = (i-1)* 10 + j, 
+                                       assort1 = assortativity.degree(G), assort2 = assortativity.degree(G2) )
+  }
+}
+assort = data.frame(t(as.data.frame.list(assort)))
