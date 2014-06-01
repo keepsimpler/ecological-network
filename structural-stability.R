@@ -90,30 +90,7 @@ plot(ss[[50]]$AlphaT * colSums(ss[[50]]$U), ss[[50]]$eigs )
 colSums(ss[[1]]$U) / ss[[1]]$AlphaT = Alpha
 
 
-s = 200; k = 5
-ldply(seq(from = 2, to = 7, by = 0.1), function(expower) {
-  print(expower)
-  G = graph.connected(s, k, expower = expower, gtype = 'sf')
-  A = igraph::get.adjacency(G)
-  A = as.matrix(A)
-  #eigen(A)
-  #D = diag(rowSums(A) + 0.1) 
-  D = diag(rep(s / 4, s))
-  L = D - A
-  Lambda = eigen(L)$values
-  
-  Alpha = runif(s, min = 2, max = 2)
-  Nstar = solve(L) %*% Alpha  # the feasible fixed point
-  Nstar
-  Phi = - L * as.vector(Nstar)  # the community matrix
-  abund.mean = mean(Nstar)
-  abund.sd = sd(Nstar)
-  lev = max(eigen(Phi)$values)
-  sev = eigen(Phi)$values[s1+s2-1]
-  levM = max(eigen(L)$values)
-  c(abund.mean, abund.sd, abund.mean / abund.sd, lev, sev, levM)
-})
-
+# check the relation between eigvectors and eigenvalues
 s = 200; k = 3
 G = graph.connected(s, k, gtype = 'er')
 A = igraph::get.adjacency(G)
@@ -131,3 +108,22 @@ AlphaT = t(Alpha) %*% U
 AlphaT == (eigs * NstarT)
 
 AlphaT[200] * U[,200] / eigs[200]
+
+
+
+# check the relation between distribution of species abundances and the degrees and second-order degrees
+s1 = 100; s2 = 100
+k = 3
+G = graph.connected(c(s1, s2), k = k, gtype = 'bipartite')
+A = igraph::get.incidence(G)
+
+V = - as.one.mode(A)
+beta0 = ceiling( sqrt((s1 + s2) * k) )  # squared root of edges number, to ensure the positive definitive of M
+D = diag(rep(beta0, s1 + s2))
+M = D + V
+Drev = solve(D)
+I = diag(rep(1, s1 + s2))
+(I + V %*% Drev) %*% D == M
+B = V %*% Drev
+Mrev = Drev - Drev^2 %*% V + Drev^3 %*% V %*% V - Drev^4 %*% V %*% V %*% V + Drev^5 %*% V %*% V %*% V %*% V
+(solve(M) - Mrev)

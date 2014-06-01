@@ -169,10 +169,11 @@ for (i in 1:100) {
   }
   A = igraph::get.incidence(G)
   for (j in 1:10) {
-    B = swaplinks(A, HowManyToTry = 5000)
-    G2 = graph.incidence(B)
+    B2 = swaplinks(A, HowManyToTry = 5000)
+    G2 = graph.incidence(B2)
     assort[[(i-1)* 10 + j]] = c(i = (i-1)* 10 + j, 
-                                       assort1 = assortativity.degree(G), assort2 = assortativity.degree(G2) )
+                                assort1 = assortativity.degree(G), assort2 = assortativity.degree(G2),
+                                nest1 = nest.nodf(B)$NODF, nest2 = nest.nodf(B2)$NODF)
   }
 }
 assort = data.frame(t(as.data.frame.list(assort)))
