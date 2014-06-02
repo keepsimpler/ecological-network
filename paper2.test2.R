@@ -177,3 +177,94 @@ for (i in 1:100) {
   }
 }
 assort = data.frame(t(as.data.frame.list(assort)))
+
+B = A
+B[B>0] = 1
+for (i in 1:50) {
+  B = swaplinks.disassort.onestep(B, ntry = 10000)
+  print(B$tried)
+  B = B$B
+}
+
+B = A
+B[B>0] = 1
+for (i in 1:50) {
+  B = rewirelinks.richer.onestep(B, ntry = 10000)
+  print(B$tried)
+  B = B$B
+}
+
+
+## 
+result.graphs = list()
+s1 = s2 = 25
+k = 2
+G = graph.connected(s = s1, k = k, gtype = 'regular')
+A = as.matrix(igraph::get.adjacency(G))  # a regular bipartite random graph
+#G2 = graph.incidence(A)
+B = A
+count = 0
+repeat {
+  count = count + 1
+  shouldcontinue = FALSE
+  ## rewiring one link to a random node which has more neighbors
+  ## if tring enough times, and still fail to rewire, then [shouldcontinue] is false.
+  for (i in 1:5) {
+    B = rewirelinks.richer.onestep(B, ntry = 5000)
+    if (B$flag == TRUE) {
+      shouldcontinue = TRUE
+      break
+    }
+    else {
+      B = B$B
+    }
+  }
+  if (!shouldcontinue) break
+  B = B$B  # the new graph
+  
+  ## swapping two links to increase assortativity
+  B2 = B
+  count.assort = 0
+  repeat {
+    count.assort = count.assort + 1
+    print(paste(count, count.assort))
+    shouldcontinue.assort = FALSE
+    for (j in 1:5) {
+      B2 = swaplinks.assort.onestep(B2, ntry = 5000)
+      if (B2$flag == TRUE) {
+        shouldcontinue.assort = TRUE
+        break
+      }
+      else {
+        B2 = B2$B
+      }
+    }
+    if (!shouldcontinue.assort) break
+    B2 = B2$B  # the new graph
+    result.graphs[[length(result.graphs) + 1]] =  list(count = count, count.assort = count.assort, B = B, B2 = B2)
+  }
+  
+  ## swapping two links to decrease assortativity
+  B2 = B
+  count.assort = 0
+  repeat {
+    count.assort = count.assort - 1
+    print(paste(count, count.assort))
+    shouldcontinue.assort = FALSE
+    for (j in 1:5) {
+      B2 = swaplinks.disassort.onestep(B2, ntry = 5000)
+      if (B2$flag == TRUE) {
+        shouldcontinue.assort = TRUE
+        break
+      }
+      else {
+        B2 = B2$B
+      }
+    }
+    if (!shouldcontinue.assort) break
+    B2 = B2$B  # the new graph
+    result.graphs[[length(result.graphs) + 1]] =  list(count = count, count.assort = count.assort, B = B, B2 = B2)
+  }
+}
+
+
