@@ -178,27 +178,12 @@ for (i in 1:100) {
 }
 assort = data.frame(t(as.data.frame.list(assort)))
 
-B = A
-B[B>0] = 1
-for (i in 1:50) {
-  B = swaplinks.disassort.onestep(B, ntry = 10000)
-  print(B$tried)
-  B = B$B
-}
-
-B = A
-B[B>0] = 1
-for (i in 1:50) {
-  B = rewirelinks.richer.onestep(B, ntry = 10000)
-  print(B$tried)
-  B = B$B
-}
 
 
-## 
+## degree heterogeneity and assortativity influence on the mean and variance of species abundance at equilibrium.
 result.graphs = list()
-s1 = s2 = 25
-k = 2
+s1 = s2 = 50
+k = 4
 G = graph.connected(s = s1, k = k, gtype = 'regular')
 A = as.matrix(igraph::get.adjacency(G))  # a regular bipartite random graph
 #G2 = graph.incidence(A)
@@ -221,13 +206,13 @@ repeat {
   }
   if (!shouldcontinue) break
   B = B$B  # the new graph
+  result.graphs[[length(result.graphs) + 1]] =  list(count = count, count.assort = 0, B = B, B2 = B)
   
   ## swapping two links to increase assortativity
   B2 = B
   count.assort = 0
   repeat {
     count.assort = count.assort + 1
-    print(paste(count, count.assort))
     shouldcontinue.assort = FALSE
     for (j in 1:5) {
       B2 = swaplinks.assort.onestep(B2, ntry = 5000)
@@ -240,6 +225,7 @@ repeat {
       }
     }
     if (!shouldcontinue.assort) break
+    print(paste(count, count.assort))
     B2 = B2$B  # the new graph
     result.graphs[[length(result.graphs) + 1]] =  list(count = count, count.assort = count.assort, B = B, B2 = B2)
   }
@@ -249,7 +235,6 @@ repeat {
   count.assort = 0
   repeat {
     count.assort = count.assort - 1
-    print(paste(count, count.assort))
     shouldcontinue.assort = FALSE
     for (j in 1:5) {
       B2 = swaplinks.disassort.onestep(B2, ntry = 5000)
@@ -262,9 +247,37 @@ repeat {
       }
     }
     if (!shouldcontinue.assort) break
+    print(paste(count, count.assort))
     B2 = B2$B  # the new graph
     result.graphs[[length(result.graphs) + 1]] =  list(count = count, count.assort = count.assort, B = B, B2 = B2)
   }
 }
 
+Alpha = runif(s1 + s2, min = 2, max = 2)
+beta0 = ceiling( sqrt((s1 + s2) * k) )  # squared root of edges number, to ensure the positive definitive of M
+D = diag(rep(beta0, s1 + s2))
+tmp = ldply(result.graphs, function(i) {
+  B2 = i$B2
+  B2 = get.adjacency(B2)
+  degrees = rowSums(B2)  # the degrees
+  heterogeneity = sum(degrees^2)  # the degree heterogeneity
+  degrees2 = rowSums(B2 %*% B2)  # the two-hop degrees
+  assortativity = sum( degrees2 / degrees )
+  M = D - B2
+  Nstar = solve(M) %*% Alpha  # the feasible fixed point
+  abundance.mean = mean(Nstar)
+  abundance.sd = sd(Nstar)
+  c(index = i$count, index.assort = i$count.assort, 
+    heterogeneity = heterogeneity, assortativity = assortativity,
+    abundance.mean = abundance.mean, abundance.sd = abundance.sd)
+})
 
+tmp %.% group_by(index) %.% summarise(length(index.assort))
+
+plot(1:2214, tmp$heterogeneity)
+plot(1:2214, tmp$assortativity)
+plot(1:2214, tmp$abundance.mean)
+plot(1:2214, tmp$abundance.sd)
+
+tmp2 = filter(tmp, index == 40)
+tmp2 = select(tmp2, -index)

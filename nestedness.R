@@ -28,7 +28,7 @@ get.backtrack <- function(g){
 #' @details .  
 #' @import igraph
 graph.connected <- function(s, k, gtype, maxtried = 100, expower = 2.5, ...) {
-  library(igraph)
+  #library(igraph)
   if (gtype == 'bipartite' && is.na(s[2])) {  # the bipartite graph need size of two groups of nodes
     warning('sizes of TWO groups of nodes should be designated. 
             we have assumed the size of second group equal to the size of first group.')
@@ -104,7 +104,7 @@ rewirelinks.richer.bipartite <- function(graph, niter = 1) {
 #' @details .  
 #' @import bipartite
 rewirelinks.richer <- function(B, HowManyToTry) {
-  library(bipartite)
+  #library(bipartite)
   B = sortweb(B)  # sort rows and cols descending, ensure the chosen species later has more interactions
   count1 <- 0
   NumP <- dim(B)[1]
@@ -150,8 +150,8 @@ rewirelinks.richer <- function(B, HowManyToTry) {
 #' @details .  
 #' @import bipartite
 rewirelinks.richer.onestep <- function(B, connected = TRUE, ntry = 100) {
-  require(bipartite)
-  require(igraph)
+  #require(bipartite)
+  #require(igraph)
   B = sortweb(B)  # sort rows and cols descending, ensure the chosen species later has more interactions
   NumP <- dim(B)[1]
   NumA <- dim(B)[2]

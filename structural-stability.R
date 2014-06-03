@@ -116,7 +116,7 @@ s1 = 100; s2 = 100
 k = 3
 G = graph.connected(c(s1, s2), k = k, gtype = 'bipartite')
 A = igraph::get.incidence(G)
-
+#A = swaplinks.disassort.onestep(A, ntry = 10000); A = A$B
 V = - as.one.mode(A)
 beta0 = ceiling( sqrt((s1 + s2) * k) )  # squared root of edges number, to ensure the positive definitive of M
 D = diag(rep(beta0, s1 + s2))
@@ -124,7 +124,7 @@ M = D + V
 Drev = solve(D)
 I = diag(rep(1, s1 + s2))
 (I + V %*% Drev) %*% D == M
-B = V %*% Drev
+#B = V %*% Drev
 Mrev = Drev - Drev^2 %*% V + Drev^3 %*% V %*% V - Drev^4 %*% V %*% V %*% V + Drev^5 %*% V %*% V %*% V %*% V
-(solve(M) - Mrev)
+sd(solve(M) - Mrev)
 
