@@ -128,3 +128,6 @@ I = diag(rep(1, s1 + s2))
 Mrev = Drev - Drev^2 %*% V + Drev^3 %*% V %*% V - Drev^4 %*% V %*% V %*% V + Drev^5 %*% V %*% V %*% V %*% V
 sd(solve(M) - Mrev)
 
+
+
+##### 

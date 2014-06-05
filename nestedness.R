@@ -188,7 +188,7 @@ rewirelinks.richer.onestep <- function(B, connected = TRUE, ntry = 100) {
       }
     }
     ## if the new graph is connected, [flag2] is TRUE
-    G = graph.incidence(B2)  
+    G = graph.incidence(B2, add.names = NA)  
     if (is.connected(G)) flag2 = TRUE
     
     ## if the rewiring is success, and (the new graph is connected or that is not required)
@@ -238,7 +238,7 @@ swaplinks.disassort.onestep <- function(B, connected = TRUE, ntry = 100) {
       flag1 = TRUE
     }
     ## if the new graph is connected, [flag2] is TRUE
-    G = graph.incidence(B2)  
+    G = graph.incidence(B2, add.names = NA)  
     if (is.connected(G)) flag2 = TRUE
     
     ## if the rewiring is success, and (the new graph is connected or that is not required)
@@ -288,7 +288,7 @@ swaplinks.assort.onestep <- function(B, connected = TRUE, ntry = 100) {
       flag1 = TRUE
     }
     ## if the new graph is connected, [flag2] is TRUE
-    G = graph.incidence(B2)  
+    G = graph.incidence(B2, add.names = NA)  
     if (is.connected(G)) flag2 = TRUE
     
     ## if the rewiring is success, and (the new graph is connected or that is not required)
@@ -517,4 +517,15 @@ nest.nodf2 <- function (comm, order = TRUE)
   out <- list(fill = fill, N.columns = N.columns, N.rows = N.rows, NODF = NODF)
   # class(out) <- "nestednodf"
   out
+}
+
+## transfer the incidency matrix to adjacency matrix
+inc.to.adj <- function(A){
+  NumP <- dim(A)[1]  # number of plants
+  NumA <- dim(A)[2]  # number of animals
+  S <- NumP + NumA  # number of all species
+  Adj <- matrix(0, S, S)  # initialize the adjacency matrix as zero-matrix
+  Adj[1:NumP, (NumP + 1):S] <- A  # the upper right sub-matrix is incidence matrix
+  Adj <- Adj + t(Adj)  # the lower left sub-matrix is transpose of incidence matrix
+  return(Adj)
 }
