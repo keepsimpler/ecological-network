@@ -14,6 +14,7 @@ load("~/Code/ecological-network/result.lv1-25-25-1.5-0.RData")
 ## load result.lv2
 load("~/Code/ecological-network/result.lv2-25-25-1.5-0.001-0.RData")
 
+s1 = s2 = 25; k = 1.5
 
 ## get the graphs which have random assortativity
 result.graphs.0 = list()
@@ -25,9 +26,23 @@ for (i in 1:length(result.graphs)) {
 }
 
 
+
+## LV1 model in stochastic environment
+result.lv1.stochastic = ldply(result.lv1, function(lv1) {
+  c(imean.mean = mean(lv1$Mean), imean.sd = sd(lv1$Mean),
+    tsi.mean = mean( lv1$Mean / sqrt( diag(lv1$Sigma) ) ),
+    tsi.sd =  mean( lv1$Mean / sqrt( diag(lv1$Sigma) ) ),
+    ivar.mean = mean(lv1$Sigma), ivar.sd = sd(lv1$Sigma),
+    ivars.mean = mean(diag(lv1$Sigma)), ivars.sd = sd(diag(lv1$Sigma)),
+    tse = sum(lv1$Mean) / sqrt(sum(lv1$Sigma))
+    )
+})
+result.lv1.stochastic$i = 1:length(result.lv1)
+#    imean.cv = mean(result.lv1[[i]]$Mean) / sd(result.lv1[[i]]$Mean),
+
+## LV1 model in deterministic environment
 ## degree heterogeneity and assortativity influence on the mean and variance of species abundance at equilibrium.
-s1 = s2 = 25; k = 1.5
-Alpha = runif(s1 + s2, min = 2, max = 2)
+Alpha = runif(s1 + s2, min = 1, max = 1)
 beta0 = ceiling( sqrt((s1 + s2) * k) )  # squared root of edges number, to ensure the positive definitive of M
 D = diag(rep(beta0, s1 + s2))
 result.lv1.deterministic = ldply(result.graphs, function(i) {
@@ -38,14 +53,16 @@ result.lv1.deterministic = ldply(result.graphs, function(i) {
   heterogeneity = sum(degrees^2) / sum(degrees)  # the degree heterogeneity
   degrees2 = rowSums(B2 %*% B2)  # the two-hop degrees
   assortativity = sum( degrees2 / degrees^2 )
+  lev = eigen(B2)$values[1]
   M = D - B2
   Nstar = solve(M) %*% Alpha  # the feasible fixed point
   abundance.mean = mean(Nstar)
   abundance.sd = sd(Nstar)
   c(index = i$count, index.assort = i$count.assort, nested.nodf = nested.nodf['NODF'],
-    heterogeneity = heterogeneity, assortativity = assortativity,
+    heterogeneity = heterogeneity, assortativity = assortativity, lev = lev,
     abundance.mean = abundance.mean, abundance.sd = abundance.sd)
 })
+
 result.lv1.deterministic$i = 1:length(result.graphs)
 library(akima)
 im = with(result.lv1.deterministic, interp(heterogeneity, assortativity, abundance.sd))  # nested.nodf.NODF

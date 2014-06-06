@@ -470,3 +470,17 @@ corrplot(NM4, method = "color", cl.pos = "n", tl.pos = "n", addgrid.col = 'black
          is.corr = FALSE, p.mat = abs(NM4),  insig = "p-value", 
          col = col3(200))
 
+
+###############################################################################
+# Statistic of Empirical Networks
+###############################################################################
+
+degrees.strengths = llply(datasets.connected.pre, function(datasetname) {
+  dataset = get(datasetname)
+  A = as.one.mode(dataset)
+  strengths = rowSums(A)
+  A[A > 0] = 1
+  degrees = rowSums(A)
+  list(strengths = strengths, degrees = degrees)
+})
+
