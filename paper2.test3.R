@@ -31,7 +31,7 @@ for (i in 1:length(result.graphs)) {
 result.lv1.stochastic = ldply(result.lv1, function(lv1) {
   c(imean.mean = mean(lv1$Mean), imean.sd = sd(lv1$Mean),
     tsi.mean = mean( lv1$Mean / sqrt( diag(lv1$Sigma) ) ),
-    tsi.sd =  mean( lv1$Mean / sqrt( diag(lv1$Sigma) ) ),
+    tsi.sd =  sd( lv1$Mean / sqrt( diag(lv1$Sigma) ) ),
     ivar.mean = mean(lv1$Sigma), ivar.sd = sd(lv1$Sigma),
     ivars.mean = mean(diag(lv1$Sigma)), ivars.sd = sd(diag(lv1$Sigma)),
     tse = sum(lv1$Mean) / sqrt(sum(lv1$Sigma))
@@ -65,7 +65,7 @@ result.lv1.deterministic = ldply(result.graphs, function(i) {
 
 result.lv1.deterministic$i = 1:length(result.graphs)
 library(akima)
-im = with(result.lv1.deterministic, interp(heterogeneity, assortativity, abundance.sd))  # nested.nodf.NODF
+im = with(result.lv1.deterministic, interp(heterogeneity, assortativity, lev))  # nested.nodf.NODF
 
 with(im,
      filled.contour(x, y, z, col = rainbow(200), nlevels = 200,
@@ -88,3 +88,24 @@ library(ggplot2)
 ggplot(data = tmp, aes(x = i, y = abundance.mean / abundance.sd)) +
   geom_point(size = 1) +  # , alpha = .7, color = 'sky blue', fill = 'sky blue'
   theme_bw()
+
+out = lv2.25.25.1.5.131[[1]]$out
+matplot(out[8000:10000, 1], out[8000:10000, 2:51], type = 'l', lwd = 0.7)
+
+
+
+###################################################################################
+# Statistic measures for stochstic LV2 model
+###################################################################################
+library(plyr)
+#lv2 = lv2.25.25.1.5.0.05
+lv2.stats = ldply(lv2.25.25.1.5.0.01, function(one) {
+  out = one$out
+  out = out[5001:9901, 2:51]
+  Mean = apply(out, 2, mean)
+  Sigma = var(out)
+  #tse = mean(apply(out, 1, sum)) / sd(apply(out, 1, sum))
+  c(total.mean = sum(Mean), total.sd = sqrt(sum(Sigma)), tse = sum(Mean) / sqrt(sum(Sigma)), #tse2 = tse,
+    individual.var.sum = sum(diag(Sigma)), individual.cov.sum = sum(Sigma-diag(diag(Sigma))))
+})
+lv2.stats$i = 1:124

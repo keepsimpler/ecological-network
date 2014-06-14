@@ -235,9 +235,72 @@ df.nm3.corr.long = melt(df.nm3.corr, id.vars = c('dataset'), measure.vars = c('R
                       variable.name = 'corr.type', value.name = 'corr.value')
 df.nm3.corr.long$nullmodel = 'Null model 3'
 
+df.nm3.corr.spearman = ddply(df.nm3, .(dataset), summarise, 
+                             spearman.NODF.wlev.est = cor.test(NODF.x, lev.weight.x, method = 'spearman', exact = FALSE)$estimate,
+                             spearman.NODF.wlev.pvalue = cor.test(NODF.x, lev.weight.x, method = 'spearman', exact = FALSE)$p.value,
+                             spearman.CMNB.wlev.est = cor.test(cmnb.x, lev.weight.x, method = 'spearman', exact = FALSE)$estimate,
+                             spearman.CMNB.wlev.pvalue = cor.test(cmnb.x, lev.weight.x, method = 'spearman', exact = FALSE)$p.value,
+                             spearman.WNODF.wlev.est = cor.test(WNODF.x, lev.weight.x, method = 'spearman', exact = FALSE)$estimate,
+                             spearman.WNODF.wlev.pvalue = cor.test(WNODF.x, lev.weight.x, method = 'spearman', exact = FALSE)$p.value,
+                             spearman.WINE.wlev.est = cor.test(wine.x, lev.weight.x, method = 'spearman', exact = FALSE)$estimate,
+                             spearman.WINE.wlev.pvalue = cor.test(wine.x, lev.weight.x, method = 'spearman', exact = FALSE)$p.value,
+                             spearman.Hq.wlev.est = cor.test(sqrt(sqrt(Hq.x)), lev.weight.x, method = 'spearman')$estimate,
+                             spearman.Hq.wlev.pvalue = cor.test(sqrt(sqrt(Hq.x)), lev.weight.x, method = 'spearman')$p.value,
+                             spearman.NODF.blev.est = cor.test(NODF.x, lev.bin.x, method = 'spearman', exact = FALSE)$estimate,
+                             spearman.NODF.blev.pvalue = cor.test(NODF.x, lev.bin.x, method = 'spearman', exact = FALSE)$p.value
+)
+
+df.nm3.corr.spearman = ddply(df.nm3, .(dataset), summarise, 
+                             spearman.NODF.blev.est = cor.test(NODF.x, lev.bin.x, method = 'spearman', exact = FALSE)$estimate,
+                             spearman.NODF.blev.pvalue = cor.test(NODF.x, lev.bin.x, method = 'spearman', exact = FALSE)$p.value,
+                             spearman.CMNB.blev.est = cor.test(cmnb.x, lev.bin.x, method = 'spearman', exact = FALSE)$estimate,
+                             spearman.CMNB.blev.pvalue = cor.test(cmnb.x, lev.bin.x, method = 'spearman', exact = FALSE)$p.value,
+                             spearman.Hq.NODF.est = cor.test(sqrt(sqrt(Hq.x)), NODF.x, method = 'spearman', exact = FALSE)$estimate,
+                             spearman.Hq.NODF.pvalue = cor.test(sqrt(sqrt(Hq.x)), NODF.x, method = 'spearman', exact = FALSE)$p.value,
+                             spearman.Hq.WNODF.est = cor.test(sqrt(sqrt(Hq.x)), WNODF.x, method = 'spearman', exact = FALSE)$estimate,
+                             spearman.Hq.WNODF.pvalue = cor.test(sqrt(sqrt(Hq.x)), WNODF.x, method = 'spearman', exact = FALSE)$p.value,
+                             spearman.Hq.wlev.est = cor.test(sqrt(sqrt(Hq.x)), lev.weight.x, method = 'spearman', exact = FALSE)$estimate,
+                             spearman.Hq.wlev.pvalue = cor.test(sqrt(sqrt(Hq.x)), lev.weight.x, method = 'spearman', exact = FALSE)$p.value,
+                             spearman.wC4.wlev.est = cor.test(wC4.x, lev.weight.x, method = 'spearman', exact = FALSE)$estimate,
+                             spearman.wC4.wlev.pvalue = cor.test(wC4.x, lev.weight.x, method = 'spearman', exact = FALSE)$p.value,
+                             spearman.NODF.wlev.est = cor.test(NODF.x, lev.weight.x, method = 'spearman', exact = FALSE)$estimate,
+                             spearman.NODF.wlev.pvalue = cor.test(NODF.x, lev.weight.x, method = 'spearman', exact = FALSE)$p.value,
+                             spearman.CMNB.wlev.est = cor.test(cmnb.x, lev.weight.x, method = 'spearman', exact = FALSE)$estimate,
+                             spearman.CMNB.wlev.pvalue = cor.test(cmnb.x, lev.weight.x, method = 'spearman', exact = FALSE)$p.value,
+                             spearman.WNODF.wlev.est = cor.test(WNODF.x, lev.weight.x, method = 'spearman', exact = FALSE)$estimate,
+                             spearman.WNODF.wlev.pvalue = cor.test(WNODF.x, lev.weight.x, method = 'spearman', exact = FALSE)$p.value,
+                             spearman.WINE.wlev.est = cor.test(wine.x, lev.weight.x, method = 'spearman', exact = FALSE)$estimate,
+                             spearman.WINE.wlev.pvalue = cor.test(wine.x, lev.weight.x, method = 'spearman', exact = FALSE)$p.value
+)
+
+df.nm3.corr.spearman = filter(df.nm3.corr.spearman, dataset != 'vazquenc.C.Pre')  # All link weights of dataset vazquenc.C.Pre equal to 1
+df.nm3.corr.spearman.long = melt(df.nm3.corr.spearman, id.vars = c('dataset'), 
+                                 measure.vars = c('spearman.Hq.wlev.est', 'spearman.NODF.wlev.est', 'spearman.CMNB.wlev.est',
+                                                  'spearman.WNODF.wlev.est', 'spearman.WINE.wlev.est'), 
+                                 variable.name = 'corr.type', value.name = 'corr.value')
+df.nm3.corr.spearman.long$nullmodel = 'Null model 3'
+p <- ggplot(data = df.nm3.corr.spearman.long, aes(x = corr.type, y = corr.value))
+p + geom_boxplot() +
+  scale_x_discrete('Network measure') +
+  scale_y_continuous(expression(paste('Spearman rank coefficient ', rho))) +
+  ggtitle('Spearman rank coefficients between network measures for null model 3') +
+  theme_bw()
+
+#df.nm3.corr.spearman.2 = filter(df.nm3.corr.spearman, dataset != 'kato1990.C.Pre')  # All link weights of dataset vazquenc.C.Pre equal to 1
+df.nm3.corr.spearman.long.weight = melt(df.nm3.corr.spearman.2, id.vars = c('dataset'), 
+                                        measure.vars = c('spearman.Hq.WNODF.est', 'spearman.Hq.wlev.est', 'spearman.WNODF.wlev.est'),  #'spearman.CMNB.blev.est',
+                                        variable.name = 'corr.type', value.name = 'corr.value')
+
+p <- ggplot(data = df.nm3.corr.spearman.long.weight, aes(x = corr.type, y = corr.value))
+p + geom_boxplot() +
+  scale_x_discrete('Network measure', labels = c(expression('Hq ~ WNODF'), expression(paste('Hq ~ ', lambda[1])), 
+                                                 expression(paste('WNODF ~ ', lambda[1])))) +
+  scale_y_continuous(expression(paste('Spearman\'s rank coefficient ', rho))) +  #'Coefficient of Determination ', R^2 
+  ggtitle('Spearman rank coefficients between network measures in null model 3 for quantitative case') +  # Coefficien of Determination
+  theme_bw()
 
 
-########### measures of Null Model 4 #############
+############################### measures of Null Model 4 #####################################
 df.nm4 = ldply(datasets.connected.pre, .parallel = TRUE, function(A) {
   A = get(A)
   edges = length(A[A > 0])  # get number of links
@@ -262,31 +325,127 @@ sum(df.nm4.pvalue$pvalue.lev > 0.95 | df.nm4.pvalue$pvalue.lev < 0.05)  # pvalue
 
 # get the correlation between Hq and lev
 colnames(df.nm4)[16] = 'WNODF.x'; colnames(df.nm4)[33] = 'WNODF.y'  # rename the column name of 'weighted NODF' to 'WNODF'
-df.nm4.corr = ddply(df.nm4, .(dataset), summarise, pearson.Hq = cor(sqrt(sqrt(Hq.x)), lev.weight.x),  # peason coefficient between Hq and lev
-                    R2.Hq = summary(lm(sqrt(sqrt(Hq.x)) ~ lev.weight.x, data=faithful))$r.squared,  # R^2 coefficient between Hq and lev
-                    pearson.NODF = cor(sqrt(sqrt(NODF.x)), lev.weight.x),  # peason coefficient between NODF and lev
-                    R2.NODF = summary(lm(sqrt(sqrt(NODF.x)) ~ lev.weight.x, data=faithful))$r.squared,  # R^2 coefficient between NODF and lev
-                    pearson.CMNB = cor(sqrt(sqrt(cmnb.x)), lev.weight.x),  # peason coefficient between cmnb and lev
-                    R2.CMNB = summary(lm(sqrt(sqrt(cmnb.x)) ~ lev.weight.x, data=faithful))$r.squared,  # R^2 coefficient between cmnb and lev
-                    pearson.WNODF = cor(sqrt(sqrt(WNODF.x)), lev.weight.x),  # peason coefficient between WNODF and lev
-                    R2.WNODF = summary(lm(sqrt(sqrt(WNODF.x)) ~ lev.weight.x, data=faithful))$r.squared,  # R^2 coefficient between WNODF and lev
-                    pearson.WINE = cor(sqrt(sqrt(wine.x)), lev.weight.x),  # peason coefficient between WINE and lev
-                    R2.WINE = summary(lm(sqrt(sqrt(wine.x)) ~ lev.weight.x, data=faithful))$r.squared)  # R^2 coefficient between WINE and lev
+df.nm4.corr = ddply(df.nm4, .(dataset), summarise, R2.Hq = cor(sqrt(sqrt(Hq.x)), lev.weight.x)^2,  # R^2 coefficient between Hq and lev
+                    R2.NODF = cor(NODF.x, lev.weight.x)^2,  # R^2 coefficient between NODF and lev
+                    R2.CMNB = cor(cmnb.x, lev.weight.x)^2,  # R^2 coefficient between cmnb and lev
+                    R2.WNODF = cor(WNODF.x, lev.weight.x)^2,  # R^2 coefficient between WNODF and lev
+                    R2.WINE = cor(wine.x, lev.weight.x)^2,  # R^2 coefficient between WINE and lev
+                    R2.NODF.Hk = cor(NODF.x, Hk.x)^2,  # R^2 coefficient between NODF and Hk
+                    R2.NODF.blev = cor(NODF.x, lev.bin.x)^2,  # R^2 coefficient between NODF and binary lev
+                    R2.Hk.blev = cor(Hk.x, lev.bin.x)^2,  # R^2 coefficient between Hk and binary lev
+                    R2.Hq.NODF = cor(sqrt(sqrt(Hq.x)), NODF.x)^2,  # R^2 coefficient between Hq and NODF
+                    R2.Hq.WNODF = cor(sqrt(sqrt(Hq.x)), WNODF.x)^2  # R^2 coefficient between Hq and NODF                 
+                    )  # R^2 coefficient between WINE and lev
 
-df.nm4.corr.long = melt(df.nm4.corr, id.vars = c('dataset'), measure.vars = c('R2.Hq', 'R2.NODF', 'R2.CMNB', 'R2.WNODF', 'R2.WINE'),
-                        variable.name = 'corr.type', value.name = 'corr.value')
-df.nm4.corr.long$nullmodel = 'Null model 4'
+df.nm4.corr.spearman = ddply(df.nm4, .(dataset), summarise, 
+                             spearman.NODF.Hk.est = cor.test(NODF.x, Hk.x, method = 'spearman', exact = FALSE)$estimate,
+                             spearman.NODF.Hk.pvalue = cor.test(NODF.x, Hk.x, method = 'spearman', exact = FALSE)$p.value,
+                             spearman.CMNB.Hk.est = cor.test(cmnb.x, Hk.x, method = 'spearman', exact = FALSE)$estimate,
+                             spearman.CMNB.Hk.pvalue = cor.test(cmnb.x, Hk.x, method = 'spearman', exact = FALSE)$p.value,
+                             spearman.NODF.blev.est = cor.test(NODF.x, lev.bin.x, method = 'spearman', exact = FALSE)$estimate,
+                             spearman.NODF.blev.pvalue = cor.test(NODF.x, lev.bin.x, method = 'spearman', exact = FALSE)$p.value,
+                             spearman.CMNB.blev.est = cor.test(cmnb.x, lev.bin.x, method = 'spearman', exact = FALSE)$estimate,
+                             spearman.CMNB.blev.pvalue = cor.test(cmnb.x, lev.bin.x, method = 'spearman', exact = FALSE)$p.value,
+                             spearman.Hk.blev.est = cor.test(Hk.x, lev.bin.x, method = 'spearman', exact = FALSE)$estimate,
+                             spearman.Hk.blev.pvalue = cor.test(Hk.x, lev.bin.x, method = 'spearman', exact = FALSE)$p.value,
+                             spearman.Hq.NODF.est = cor.test(sqrt(sqrt(Hq.x)), NODF.x, method = 'spearman', exact = FALSE)$estimate,
+                             spearman.Hq.NODF.pvalue = cor.test(sqrt(sqrt(Hq.x)), NODF.x, method = 'spearman', exact = FALSE)$p.value,
+                             spearman.Hq.WNODF.est = cor.test(sqrt(sqrt(Hq.x)), WNODF.x, method = 'spearman', exact = FALSE)$estimate,
+                             spearman.Hq.WNODF.pvalue = cor.test(sqrt(sqrt(Hq.x)), WNODF.x, method = 'spearman', exact = FALSE)$p.value,
+                             spearman.Hq.wlev.est = cor.test(sqrt(sqrt(Hq.x)), lev.weight.x, method = 'spearman', exact = FALSE)$estimate,
+                             spearman.Hq.wlev.pvalue = cor.test(sqrt(sqrt(Hq.x)), lev.weight.x, method = 'spearman', exact = FALSE)$p.value,
+                             spearman.wC4.wlev.est = cor.test(wC4.x, lev.weight.x, method = 'spearman', exact = FALSE)$estimate,
+                             spearman.wC4.wlev.pvalue = cor.test(wC4.x, lev.weight.x, method = 'spearman', exact = FALSE)$p.value,
+                             spearman.NODF.wlev.est = cor.test(NODF.x, lev.weight.x, method = 'spearman', exact = FALSE)$estimate,
+                             spearman.NODF.wlev.pvalue = cor.test(NODF.x, lev.weight.x, method = 'spearman', exact = FALSE)$p.value,
+                             spearman.CMNB.wlev.est = cor.test(cmnb.x, lev.weight.x, method = 'spearman', exact = FALSE)$estimate,
+                             spearman.CMNB.wlev.pvalue = cor.test(cmnb.x, lev.weight.x, method = 'spearman', exact = FALSE)$p.value,
+                             spearman.WNODF.wlev.est = cor.test(WNODF.x, lev.weight.x, method = 'spearman', exact = FALSE)$estimate,
+                             spearman.WNODF.wlev.pvalue = cor.test(WNODF.x, lev.weight.x, method = 'spearman', exact = FALSE)$p.value,
+                             spearman.WINE.wlev.est = cor.test(wine.x, lev.weight.x, method = 'spearman', exact = FALSE)$estimate,
+                             spearman.WINE.wlev.pvalue = cor.test(wine.x, lev.weight.x, method = 'spearman', exact = FALSE)$p.value
+)
 
-df.nm34.corr.long = rbind(df.nm3.corr.long, df.nm4.corr.long)
+df.nm4.corr.spearman.long = melt(df.nm4.corr.spearman, id.vars = c('dataset'), 
+                                 measure.vars = c('spearman.Hq.wlev.est', 'spearman.NODF.wlev.est', 'spearman.CMNB.wlev.est',
+                                 'spearman.WNODF.wlev.est', 'spearman.WINE.wlev.est'),
+                                 variable.name = 'corr.type', value.name = 'corr.value')
+df.nm4.corr.spearman.long$nullmodel = 'Null model 4'
 
-p <- ggplot(data=df.nm34.corr.long, aes(x = corr.type, y = corr.value))
+df.nm34.corr.spearman.long = rbind(df.nm3.corr.spearman.long, df.nm4.corr.spearman.long)
+
+p <- ggplot(data=df.nm34.corr.spearman.long, aes(x = corr.type, y = corr.value^2))
 p + geom_boxplot() +
-    facet_wrap(~nullmodel, scale='free') +
+  facet_wrap(~nullmodel, scale='fixed') +
   scale_x_discrete('Network measure', labels = c('Hq', 'NODF', 'CMNB', 'WNODF', 'WINE')) +
-  scale_y_continuous(expression(paste('Coefficient of determination ', R^2))) +
+  scale_y_continuous(expression(paste('Squared Spearman\'s Rank Coefficient ', rho^2))) +
   theme_bw()
 
 
+df.nm4.corr.spearman.long.bin = melt(df.nm4.corr.spearman, id.vars = c('dataset'), 
+                                 measure.vars = c('spearman.NODF.Hk.est',  'spearman.NODF.blev.est',  #'spearman.CMNB.Hk.est',
+                                                   'spearman.Hk.blev.est'),  #'spearman.CMNB.blev.est',
+                        variable.name = 'corr.type', value.name = 'corr.value')
+
+#df.nm4.corr.R2.long = melt(df.nm4.corr, id.vars = c('dataset'), measure.vars = c('R2.NODF.Hk', 'R2.NODF.blev', 'R2.Hk.blev'),
+#                           variable.name = 'corr.type', value.name = 'corr.value')
+
+p <- ggplot(data = df.nm4.corr.R2.long, aes(x = corr.type, y = corr.value))
+p + geom_boxplot() +
+  scale_x_discrete('Network measure', labels = c(expression('NODF ~ Hk'), expression(paste('NODF ~ ', lambda[1])), expression(paste('Hk ~ ', lambda[1])))) +
+  scale_y_continuous(expression(paste('Coefficient of Determination ', R^2))) +  # 'Spearman\'s rank coefficient ', rho
+  ggtitle('Coefficien of Determination between network measures in null model 4 for binary case') + # Spearman rank coefficients 
+  theme_bw()
+
+df.nm4.corr.spearman.long.weight = melt(df.nm4.corr.spearman, id.vars = c('dataset'), 
+                                 measure.vars = c('spearman.Hq.NODF.est',  'spearman.Hq.WNODF.est', 'spearman.Hq.wlev.est',
+                                                  'spearman.NODF.wlev.est', 'spearman.WNODF.wlev.est'),  #'spearman.CMNB.blev.est',
+                                 variable.name = 'corr.type', value.name = 'corr.value')
+
+#df.nm4.corr.R2.long.weight = melt(df.nm4.corr, id.vars = c('dataset'), measure.vars = c('R2.Hq.NODF', 'R2.Hq.WNODF', 'R2.Hq', 'R2.NODF', 'R2.WNODF'),
+#                           variable.name = 'corr.type', value.name = 'corr.value')
+
+p <- ggplot(data = df.nm4.corr.spearman.long.weight, aes(x = corr.type, y = corr.value))
+p + geom_boxplot() +
+  scale_x_discrete('Network measure', labels = c(expression('Hq ~ NODF'), expression('Hq ~ WNODF'), expression(paste('Hq ~ ', lambda[1])), 
+                                                 expression(paste('NODF ~ ', lambda[1])), expression(paste('WNODF ~ ', lambda[1])))) +
+  scale_y_continuous(expression(paste('Coefficient of Determination ', R^2))) +  # 'Spearman\'s rank coefficient ', rho
+  ggtitle('Coefficien of Determination between network measures in null model 4 for quantitative case') +  # Spearman rank coefficients
+  theme_bw()
+
+
+###############################################################################
+# 1. Statistic of Empirical Networks (weight distribution)
+# 2. Correlation between standard deviation of weights and \rho(WNODF~\lambda_1)
+###############################################################################
+
+df.weights = data.frame(dataset = numeric(0), weights = numeric(0))
+for (datasetname in datasets.connected.pre) {
+  dataset = get(datasetname)
+  weights = dataset[dataset > 0]
+  tmp = data.frame(weights)
+  tmp$dataset = datasetname
+  df.weights = rbind(df.weights, tmp)
+}
+p <- ggplot(data = df.weights, aes(x = dataset, y = weights))
+p + geom_boxplot() +
+  #  scale_x_discrete('Datasets') +
+  scale_y_continuous('Weight distribution') +  
+  ggtitle('Weight distibution of empirical networks') + 
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 1)) 
+
+# check the Spearman correlation between standard deviation of weight distribution and
+# \rho(WNODF ~ Hq), \rho(WNODF ~ lev), \rho(Hq ~ WNODF)
+tmp = df.nm4.corr.spearman %.% select(dataset, spearman.Hq.WNODF.est)
+df.weights.sd = df.weights %.% group_by(dataset) %.% summarise(sd = sd(weights)) %.% arrange(desc(sd))
+tmp = inner_join(tmp, df.weights.sd)
+cor.test(tmp$spearman.Hq.WNODF.est, tmp$sd, method = 'spearman')
+
+tmp = df.nm3.corr.spearman %.% select(dataset, spearman.Hq.wlev.est)
+df.weights.sd.2 = df.weights.sd %.% filter(dataset != 'vazquenc.C.Pre')
+tmp = inner_join(tmp, df.weights.sd.2)
+cor.test(tmp$spearman.Hq.wlev.est, tmp$sd, method = 'spearman')
 
 
 ##########################################################################################
@@ -472,15 +631,44 @@ corrplot(NM4, method = "color", cl.pos = "n", tl.pos = "n", addgrid.col = 'black
 
 
 ###############################################################################
-# Statistic of Empirical Networks
+# Print supplementary table S1 & S2 & S3
 ###############################################################################
+count = 1
+for (i in datasets.connected.pre) {
+  output = sprintf('%d & %s & %.3f & %.3f & %.3f \\\\  \n',count, i, 
+                   df.nm4.corr.spearman[df.nm4.corr.spearman$dataset==i,]$spearman.NODF.Hk.est, 
+                   df.nm4.corr.spearman[df.nm4.corr.spearman$dataset==i,]$spearman.NODF.blev.est, 
+                   df.nm4.corr.spearman[df.nm4.corr.spearman$dataset==i,]$spearman.Hk.blev.est)
+  cat(output)
+  count = count + 1
+}
 
-degrees.strengths = llply(datasets.connected.pre, function(datasetname) {
-  dataset = get(datasetname)
-  A = as.one.mode(dataset)
-  strengths = rowSums(A)
-  A[A > 0] = 1
-  degrees = rowSums(A)
-  list(strengths = strengths, degrees = degrees)
-})
+count = 1
+for (i in df.weights.sd$dataset) {
+  output = sprintf('%d & %s & %.2f(%.2f) & %.2f(%.2f) & %.2f(%.2f) & %.2f \\\\  \n',count, i, 
+                   df.nm4.corr.spearman[df.nm4.corr.spearman$dataset==i,]$spearman.Hq.WNODF.est, 
+                   df.nm4.corr.spearman[df.nm4.corr.spearman$dataset==i,]$spearman.Hq.WNODF.pvalue, 
+                   df.nm4.corr.spearman[df.nm4.corr.spearman$dataset==i,]$spearman.WNODF.wlev.est,
+                   df.nm4.corr.spearman[df.nm4.corr.spearman$dataset==i,]$spearman.WNODF.wlev.pvalue, 
+                   df.nm4.corr.spearman[df.nm4.corr.spearman$dataset==i,]$spearman.Hq.wlev.est, 
+                   df.nm4.corr.spearman[df.nm4.corr.spearman$dataset==i,]$spearman.Hq.wlev.pvalue,
+                   df.weights.sd[df.weights.sd$dataset == i, ]$sd
+  )
+  cat(output)
+  count = count + 1
+}
 
+count = 1
+for (i in df.weights.sd$dataset) {
+  output = sprintf('%d & %s & %.2f(%.2f) & %.2f(%.2f) & %.2f(%.2f) & %.2f \\\\  \n',count, i, 
+                   df.nm3.corr.spearman[df.nm3.corr.spearman$dataset==i,]$spearman.Hq.WNODF.est, 
+                   df.nm3.corr.spearman[df.nm3.corr.spearman$dataset==i,]$spearman.Hq.WNODF.pvalue, 
+                   df.nm3.corr.spearman[df.nm3.corr.spearman$dataset==i,]$spearman.WNODF.wlev.est,
+                   df.nm3.corr.spearman[df.nm3.corr.spearman$dataset==i,]$spearman.WNODF.wlev.pvalue, 
+                   df.nm3.corr.spearman[df.nm3.corr.spearman$dataset==i,]$spearman.Hq.wlev.est, 
+                   df.nm3.corr.spearman[df.nm3.corr.spearman$dataset==i,]$spearman.Hq.wlev.pvalue,
+                   df.weights.sd[df.weights.sd$dataset == i, ]$sd
+  )
+  cat(output)
+  count = count + 1
+}

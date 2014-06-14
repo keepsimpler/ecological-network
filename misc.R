@@ -34,16 +34,16 @@ mar1 <- function(A, B, SigmaE, t, X0 = NULL) {
 }
 
 A=c(1,1)
-B=rbind(c(0.7, -0.7),c(-0.7,0.7))
+B=rbind(c(0.6, -0.3),c(-0.3,0.6))
 m = dim(B)[1]
 SigmaE=rbind(c(1,0),c(0,1))
 t = 10000
 out = mar1(A, B, SigmaE, t, X0 = c(0,0))
 apply(out[1000:t,], 2, mean)
-var(out[1000:t,])
+var(out[1:t,])
 solve(diag(1,m) - B) %*% A
 solve(diag(1,m^2) - kronecker(B, B)) %*% as.vector(SigmaE)
-plot((t+1-1000):(t+1), out[(t+1-1000):(t+1),2], type = 'l')
+plot((t+1-5000):(t+1), out[(t+1-5000):(t+1),2], type = 'l')
 
 sum(apply(out,2,mean)) == mean(apply(out,1,sum)) 
 sum(var(out)) == var(apply(out,1,sum))
@@ -86,10 +86,8 @@ for (m in 1:15) {
 
 
 ##########################################################
-# Generating a random positive-definite matrix with user-specified positive
-eigenvalues
-# If eigenvalues are not specified, they are generated from a uniform
-distribution
+# Generating a random positive-definite matrix with user-specified positive eigenvalues
+# If eigenvalues are not specified, they are generated from a uniform distribution
 Posdef <- function (n, ev = runif(n, 0, 10)) 
 {
   Z <- matrix(ncol=n, rnorm(n^2))
@@ -117,4 +115,15 @@ get.backtrack <- function(g){
   P <- cbind(P,P[c(2,1),])
   h <- h - edges(E(h,P))
   get.adjacency(h)
+}
+
+
+ornstein.uhlenbeck <- function(T, n, mu, lambda, sigma, x0){
+  dt  <- T / n
+  dw  <- rnorm(n, 0, sqrt(dt))
+  x <- c(x0)
+  for (i in 2:(n + 1)) {
+    x[i]  <-  x[i-1] + lambda * (mu - x[i-1]) * dt + sigma * dw[i - 1]
+  }
+  x
 }

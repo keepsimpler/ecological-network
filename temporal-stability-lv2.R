@@ -59,48 +59,59 @@ parms.lv2.softmean <- function(A, gamma0 = 1, alpha0 = 1, h0 = 0) {
   list(parmsV, initV)
 }
 
-LV2 <- odeModel(
-  main = model.lv2, 
-  times = c(from = 1, to = 100, by = 0.01),
-  solver = 'lsoda')
 
-load('~/Code/ecological-network/result.graphs-25-25-1.5.RData') # load result.graphs
-alpha0 = 1
-gamma0 = 1
-h = 0.001
-alpha.mean = alpha0; alpha.deviation = alpha0 / 2  # the mean value and deviation of intrinsic growth rate
-## the [initnfuc] of LV2 object, 
-## which is executed during the object creation process that is triggered by [new] or [initialize]  
-initfunc(LV2) <- function(obj) {
-  tt <- fromtoby(times(obj))  # time steps
-  n <- length(init(obj))  # species number
-  t <- length(tt)  # steps number
-  #require(plyr)
-  # generate the stochastic intrinsic growth rates, and endue to [inputs]
-  tmp = ldply(rep(t, n), runif, min = alpha.mean - alpha.deviation, max = alpha.mean + alpha.deviation)
-  tmp = data.frame(time = tt, t(tmp))
-  inputs(obj) <- as.matrix(tmp)
-  obj
+#' @title LV2 simulation function
+#' @param graphs, 
+#' @param alpha0,
+#' @param gamma0,
+#' @param h0,
+#' @param isout, if output the time serials of simulation
+#' @param steps and stepwise of simulation
+temporal.stability.lv2 <- function(graphs, alpha0 = 1, gamma0 = 1, h0 = 0.01, isout = FALSE, steps = 10000, stepwise = 0.01) {
+  LV2 <- odeModel(
+    main = model.lv2, 
+    times = c(from = 0, to = steps * stepwise, by = stepwise),
+    solver = 'lsoda')
+  
+  alpha.mean = alpha0; alpha.deviation = alpha0 / 2  # the mean value and deviation of intrinsic growth rate
+  ## the [initnfuc] of LV2 object, 
+  ## which is executed during the object creation process that is triggered by [new] or [initialize]  
+  initfunc(LV2) <- function(obj) {
+    tt <- fromtoby(times(obj))  # time steps
+    n <- length(init(obj))  # species number
+    t <- length(tt)  # steps number
+    #require(plyr)
+    # generate the stochastic intrinsic growth rates, and endue to [inputs]
+    tmp = ldply(rep(t, n), runif, min = alpha.mean - alpha.deviation, max = alpha.mean + alpha.deviation)
+    tmp = data.frame(time = tt, t(tmp))
+    inputs(obj) <- as.matrix(tmp)
+    obj
+  }
+  
+  result.lv2 = llply(graphs, .parallel = TRUE, function(graph) {
+    A = graph$B  # get the incidency matrix
+    print(graph$count)
+    parms.and.init = parms.lv2.softmean(A, gamma0 = gamma0, alpha0 = alpha0, h0 = h0)
+    parms(LV2) = parms.and.init[[1]]
+    init(LV2) = as.numeric(parms.and.init[[2]])
+    
+    LV2 <- sim(LV2)
+    
+    LV2.out = out(LV2)
+    out = LV2.out[2:length(LV2.out)]  
+    Sigma = var(out)
+    Mean = apply(out, 2, mean)
+    if (isout)
+      res = list(graph = A, Sigma = Sigma, Mean = Mean, out = LV2.out)
+    else
+      res = list(graph = A, Sigma = Sigma, Mean = Mean)
+    res
+  })
+  result.lv2
 }
 
-result.lv2 = llply(result.graphs, .parallel = TRUE, function(graph) {
-  A = graph$B2  # get the incidency matrix
-  print(graph$count)
-  parms.and.init = parms.lv2.softmean(A, gamma0 = gamma0, alpha0 = alpha0, h0 = h0)
-  parms(LV2) = parms.and.init[[1]]
-  init(LV2) = as.numeric(parms.and.init[[2]])
-  
-  LV2 <- sim(LV2)
-  
-  LV2.out = out(LV2)
-  out = LV2.out[2:length(LV2.out)]  
-  Sigma = var(out)
-  Mean = apply(out, 2, mean)
-  list(graph = A, Sigma = Sigma, Mean = Mean)
-  
-})
 
-save(result.lv2, file = 'result.lv2.RData')
+# save(result.lv2, file = 'result.lv2.RData')
 
 # result.lv2.stats = ldply(1:100, function(i) {
 #   c(i = i, imean.mean = mean(result.lv2[[i]]$Mean), imean.sd = sd(result.lv2[[i]]$Mean), 
