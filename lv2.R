@@ -4,9 +4,9 @@ library(simecol)
 require(plyr)
 require(bipartite)
 
-library(doMC)  # 
-registerDoMC()  # register Multi Cores
-getDoParWorkers()  # get available Cores
+#library(doMC)  # 
+#registerDoMC()  # register Multi Cores
+#getDoParWorkers()  # get available Cores
 
 
 #' @title Lotka-Volterra (LV) Equations of Holling type II by Bastolla et al.
@@ -121,5 +121,29 @@ sim.lv1 <- function(graphs, alpha0 = 1, beta0 = NULL, gamma0 = 1) {
   })
   result.lv1
 }
+
+sim.lv1.2 <- function(graphs, alpha0 = 1, beta0 = 0.1, gamma0 = 1) {
+  result.lv1 = llply(graphs, function(graph) {
+    graph = graph
+    edges = sum(graph > 0)
+    numP = dim(graph)[1]
+    numA = dim(graph)[2]
+    D = diag(1, numP + numA)
+    D[1:numP, 1:numP] = beta0
+    D[(numP+1):(numP+numA), (numP+1):(numP+numA)] = beta0
+    diag(D) = 1
+    A = as.one.mode(graph)
+    A[A > 0 ] = gamma0
+    M = D - A  # competition interaction matrix
+    #r = runif(numP + numA, min = alpha0, max = alpha0)
+    r = rep(alpha0, numP + numA)  # endue the mean value of intrinsic growth rate
+    Nstar = solve(M) %*% r  # the feasible fixed point
+    Phi = - M * as.vector(Nstar)  # the community matrix
+    list(Nstar = Nstar, Phi = Phi)
+  })
+  result.lv1
+}
+
+sum(sim.lv1.2(graphs=list(graph1), gamma0=0.2, beta0=0.03)[[1]]$Nstar)
 
 # save(result.lv2, file = 'result.lv2.RData')
