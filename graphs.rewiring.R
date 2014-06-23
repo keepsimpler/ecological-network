@@ -10,8 +10,8 @@ source('nestedness.r')
 
 graphs.rewiring <- function(s1, s2, k) {
   graphs.rewiring = list()  # the generated graphs by rewiring links
-  s1 = 25; s2 = 25  # number of nodes in two groups
-  k = 1.5  # average node degree
+  #s1 = 25; s2 = 25  # number of nodes in two groups
+  #k = 1.5  # average node degree
   ## generate a connected random bipartite graph as the start point
   ## of generating graphs with different degree heterogeneity by rewiring links
   G = graph.connected(c(s1, s2), k = k, gtype = 'bipartite')  
