@@ -124,7 +124,7 @@ sim.lv1 <- function(graphs, alpha0 = 1, beta0 = NULL, gamma0 = 1) {
 
 sim.lv1.2 <- function(graphs, alpha0 = 1, beta0 = 0.1, gamma0 = 1) {
   result.lv1 = llply(graphs, function(graph) {
-    graph = graph
+    graph = graph$B
     edges = sum(graph > 0)
     numP = dim(graph)[1]
     numA = dim(graph)[2]
@@ -144,6 +144,6 @@ sim.lv1.2 <- function(graphs, alpha0 = 1, beta0 = 0.1, gamma0 = 1) {
   result.lv1
 }
 
-sum(sim.lv1.2(graphs=list(graph1), gamma0=0.2, beta0=0.03)[[1]]$Nstar)
+#sum(sim.lv1.2(graphs=list(graph1), gamma0=0.2, beta0=0.03)[[1]]$Nstar)
 
 # save(result.lv2, file = 'result.lv2.RData')

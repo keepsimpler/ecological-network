@@ -3,11 +3,11 @@
 library(yuima)
 library(plyr)
 
-library(doMC)  # 
-registerDoMC()  # register Multi Cores
-getDoParWorkers()  # get available Cores
+# library(doMC)  # 
+# registerDoMC(12)  # register Multi Cores
+# getDoParWorkers()  # get available Cores
 
-## Multivariate OU process, parameters as matrix
+## Multivariate OU (Ornstein - Uhlenbeck) process, parameters as matrix
 
 getSolveVariables <- function(m) {
   sol = llply(1:m, function(i) {
@@ -17,6 +17,7 @@ getSolveVariables <- function(m) {
 }
 
 getDrift <- function(m) {
+  if (m == 1) return('theta11*x1')
   drift = llply(1:m, function(i) {
     drift = paste('theta',i,'1*x1', sep = '')
     drift2 = llply(2:m, function(j) {
@@ -56,8 +57,8 @@ getParameters <- function(m, Theta, Sigma) {
 # first dimension: simnum, number of simulations
 # second dimension: t+1, the simulating steps of one simulation
 # third dimension: m, the dimensions of multivariates
-sim.mou <- function(simnum = 1000, steps = 1000, m, Theta, Sigma, Xinit) {
-  grid = setSampling(Terminal = 10, n = steps)
+sim.mou <- function(simnum = 1000, steps = 1000, stepwise = 0.01, m, Theta, Sigma, Xinit) {
+  grid = setSampling(Terminal = steps * stepwise, n = steps)
   drift = getDrift(m)
   diffusion = getDiffusion(m)
   solve.variable = getSolveVariables(m)
@@ -72,23 +73,40 @@ sim.mou <- function(simnum = 1000, steps = 1000, m, Theta, Sigma, Xinit) {
   Xs
 }
 
-# m = 3
-# Theta = - matrix(c(1, 0.1, 0.1, 0.1, 1, 0.1, 0.1, 0.1, 1), ncol = m)
-# Sigma = diag(1, m)
-# Xinit = c(1, 1, 1)
-# mou.out = sim.mou(simnum = 1, steps = 1000, m = m, Theta = Phi, Sigma = Sigma, Xinit = Xinit)
-# matplot(mou.out, type = 'l')
+m = 1
+Theta = matrix(-1)
+Sigma = matrix(0.8)
+Xinit = c(0)
+mou.out = sim.mou(simnum = 100, steps = 100000, m = m, Theta = Theta, Sigma = Sigma, Xinit = Xinit)
 
+m = 2
+Theta = matrix(c(-1, 0.1, 0.8, -1), ncol = m)
+Sigma = diag(0.8, m)
+Xinit = c(0, 0)
+mou.out = sim.mou(simnum = 100, steps = 100000, m = m, Theta = Theta, Sigma = Sigma, Xinit = Xinit)
+var = diag(Sigma)^2 / 2 * solve(Theta)  # expected variance-covariance matrix for the symmetric [Theta]
 
+m = 3
+Theta = matrix(c(-1, 0.1, 0.1, 0.8, -1, 0.1, 0.1, 0.1, -1), ncol = m)
+Sigma = diag(0.8, m)
+Xinit = c(0, 0, 0)
+mou.out = sim.mou(simnum = 100, steps = 100000, stepwise = 0.01, m = m, Theta = Theta, Sigma = Sigma, Xinit = Xinit)
+# matplot(mou.out[2,,], type = 'l')
+# mou.XMeans = aaply(mou.out, .margins = c(2, 3), mean)
+# mou.XVars = aaply(mou.out, .margins = c(2), var)
+# mou.XVars.self = aaply(mou.XVars, .margins = c(1), function(XVar) {
+#   c(diag(XVar), XVar[lower.tri(XVar)])
+# })
+# matplot(mou.XVars.self, type = 'l')
+ 
 
-# 
-# grid = setSampling(Terminal = 10, n = 1000)
+# grid = setSampling(Terminal = 10, n = 10000)
 # simnum = 100
 # 
 # ## One dimensional OU process
 # mod = setModel( drift = "mu - theta * x", diffusion = "sigma", state.var = "x", time.var = "t", solve.var = "x")
-# X = simulate(mod, xinit = 0, true.parameter = list(theta = 1, sigma = 1, mu = 1), sampling = grid)
-# 
+# X = simulate(mod, xinit = 0, true.parameter = list(theta = 1.5, sigma = 0.5, mu = 1), sampling = grid)
+
 # ## Two dimensional OU process
 # sol = c('x1', 'x2')
 # drift = c('-theta11 * x1 - theta12 * x2', '-theta21 * x1 - theta22 * x2')
